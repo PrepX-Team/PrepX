@@ -1,0 +1,62 @@
+# =========================
+# PYTHON
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# =========================
+# DJANGO
+# =========================
+*.log
+*.pot
+*.pyc
+
+# SQLite database
+db.sqlite3
+db.sqlite3-journal
+
+# Media & static files (optional)
+media/
+staticfiles/
+
+# =========================
+# ENV VARIABLES
+# =========================
+.env
+.env.*
+
+# =========================
+# IDEs / EDITORS
+# =========================
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# =========================
+# OS FILES
+# =========================
+# Windows
+Thumbs.db
+desktop.ini
+
+# Mac
+.DS_Store
+
+# =========================
+# GIT
+# =========================
+*.orig
+
+# =========================
+# MISC
+# =========================
+*.swp
+*.swo
