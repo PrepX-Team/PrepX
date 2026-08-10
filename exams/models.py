@@ -2,11 +2,12 @@ from django.db import models
 from django.contrib.auth.models import User
 from subjects.models import Subject, Topic
 from core.models import BaseModel
+from django.conf import settings
 
 # Create your models here.
 
 class Exam(BaseModel):
-    teacher = models.ForeignKey(User, on_delete=models.CASCADE)
+    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     duration = models.IntegerField()
     exam_key = models.CharField(max_length=20, unique=True)
