@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Subjects</h3>
+
+{% if user.role == 'admin' %}
+    <a href="{% url 'add_subject' %}" class="btn btn-primary btn-sm mb-2">+ Add Subject</a>
+{% endif %}
+
+<ul class="list-group">
+    {% for subject in subjects %}
+        <li class="list-group-item">{{ subject.name }}</li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

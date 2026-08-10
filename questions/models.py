@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from subjects.models import Subject, Topic
 from core.models import BaseModel
+from django.conf import settings
 # Create your models here.
 
 class Question(BaseModel):
@@ -21,7 +22,7 @@ class Question(BaseModel):
 
     difficulty_level = models.IntegerField()
 
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     is_global = models.BooleanField(default=False)
 
     STATUS_CHOICES = [

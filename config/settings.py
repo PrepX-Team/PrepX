@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     'core',
 ]
 
+AUTH_USER_MODEL = 'accounts.User'
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -142,3 +144,8 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'login'
+TEMPLATES[0]['DIRS'] = [BASE_DIR / 'templates']
