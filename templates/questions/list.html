@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Questions</h3>
+
+{% if user.role == 'admin' or user.role == 'teacher' %}
+    <a href="{% url 'add_question' %}" class="btn btn-primary btn-sm mb-2">+ Add Question</a>
+{% endif %}
+
+<table class="table table-bordered">
+    <tr>
+        <th>Text</th>
+        <th>Subject</th>
+        <th>Topic</th>
+        <th>Difficulty</th>
+        <th>Global</th>
+    </tr>
+
+    {% for q in questions %}
+    <tr>
+        <td>{{ q.question_text|truncatechars:60 }}</td>
+        <td>{{ q.subject.name }}</td>
+        <td>{{ q.topic.name }}</td>
+        <td>{{ q.difficulty_level }}</td>
+        <td>{{ q.is_global }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
