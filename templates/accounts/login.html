@@ -1,16 +1,122 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<h3>Login</h3>
-<form method="post">
-    {% csrf_token %}
-    <div class="mb-3">
-        <label>Username</label>
-        <input type="text" name="username" class="form-control" required>
+
+<div class="card auth-card shadow-sm">
+
+    <div class="card-body p-4">
+
+        <h4 class="text-center mb-1">
+            Welcome Back
+        </h4>
+
+        <p class="text-center text-secondary mb-4">
+            Sign in to continue to PrepX
+        </p>
+
+        <form method="post">
+
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label">
+                    Username
+                </label>
+
+                <input
+                    type="text"
+                    name="username"
+                    class="form-control"
+                    placeholder="Enter your username"
+                    required
+                    autofocus
+                >
+            </div>
+
+
+            <div class="mb-3">
+
+                <label class="form-label">
+                    Password
+                </label>
+
+                <div class="input-group">
+
+                    <input
+                        type="password"
+                        name="password"
+                        id="pw"
+                        class="form-control"
+                        placeholder="Enter your password"
+                        required
+                    >
+
+                    <button
+                        class="btn btn-outline-secondary"
+                        type="button"
+                        onclick="
+                            const p = document.getElementById('pw');
+                            p.type = p.type === 'password' ? 'text' : 'password';
+                        "
+                    >
+                        <i class="bi bi-eye"></i>
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <button
+                class="btn btn-primary w-100"
+                type="submit"
+            >
+                Sign In
+            </button>
+
+        </form>
+
+
+        <div class="text-center mt-3">
+
+            <a
+                href="{% url 'password_reset' %}"
+                class="small"
+            >
+                Forgot password?
+            </a>
+
+        </div>
+
+
+        <hr>
+
+
+        <p class="text-center small text-secondary mb-2">
+            Don't have an account?
+        </p>
+
+
+        <div class="d-flex gap-2">
+
+            <a
+                href="{% url 'register_student' %}"
+                class="btn btn-outline-primary btn-sm w-50"
+            >
+                Register as Student
+            </a>
+
+            <a
+                href="{% url 'register_teacher' %}"
+                class="btn btn-outline-secondary btn-sm w-50"
+            >
+                Register as Teacher
+            </a>
+
+        </div>
+
     </div>
-    <div class="mb-3">
-        <label>Password</label>
-        <input type="password" name="password" class="form-control" required>
-    </div>
-    <button class="btn btn-primary">Login</button>
-</form>
+
+</div>
+
 {% endblock %}

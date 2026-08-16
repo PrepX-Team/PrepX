@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h4>
+    Welcome, {{ user.first_name|default:user.username }}
+</h4>
+
+<div class="row mt-3 g-3">
+
+    <div class="col-md-4">
+        <div class="card card-stat p-3 text-center">
+            <h3>{{ my_questions }}</h3>
+            <small>My Questions</small>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card card-stat p-3 text-center">
+            <h3>{{ global_questions }}</h3>
+            <small>Global Questions</small>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

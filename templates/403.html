@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="text-center py-5">
+
+    <i class="bi bi-shield-lock display-1 text-danger"></i>
+
+    <h1 class="display-4 text-danger mt-3">
+        403
+    </h1>
+
+    <h4>
+        Access Denied
+    </h4>
+
+    <p class="text-secondary">
+        You don't have permission to view this page.
+    </p>
+
+    <a
+        href="{% url 'role_redirect' %}"
+        class="btn btn-primary btn-sm"
+    >
+        Go to Dashboard
+    </a>
+
+</div>
+
+{% endblock %}

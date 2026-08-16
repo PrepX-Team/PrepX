@@ -23,3 +23,7 @@ urlpatterns = [
     path('subjects/', include('subjects.urls')),
     path('questions/', include('questions.urls')),
 ]
+
+handler403 = 'accounts.views.custom_403'
+handler404 = 'accounts.views.custom_404'
+handler500 = 'accounts.views.custom_500'

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="text-center py-5">
+
+    <i class="bi bi-exclamation-octagon display-1 text-danger"></i>
+
+    <h1 class="display-4 text-danger mt-3">
+        500
+    </h1>
+
+    <h4>
+        Something Went Wrong
+    </h4>
+
+    <p class="text-secondary">
+        An unexpected server error occurred.
+        Please try again later.
+    </p>
+
+    <a
+        href="{% url 'role_redirect' %}"
+        class="btn btn-primary btn-sm"
+    >
+        Go to Dashboard
+    </a>
+
+</div>
+
+{% endblock %}
