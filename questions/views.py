@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
+from django.core.paginator import Paginator
+from django.http import HttpResponseForbidden
 from accounts.decorators import role_required
 from .models import Question
 from .forms import QuestionForm
+from subjects.models import Subject
 
 
 @role_required('admin', 'teacher')
@@ -26,18 +29,19 @@ def question_list(request):
     if user.role == 'admin':
         qs = Question.objects.filter(is_active=True)
     elif user.role == 'teacher':
-        qs = Question.objects.filter(
-            Q(is_global=True) | Q(created_by=user),
-            is_active=True
-        )
-    else:  # student
+        qs = Question.objects.filter(Q(is_global=True) | Q(created_by=user), is_active=True)
+    else:
         qs = Question.objects.filter(is_global=True, status='approved', is_active=True)
 
-    # Filters
+    qs = qs.select_related('subject', 'topic', 'created_by')
+
+    search = request.GET.get('search', '').strip()
     subject_id = request.GET.get('subject')
     topic_id = request.GET.get('topic')
     difficulty = request.GET.get('difficulty')
 
+    if search:
+        qs = qs.filter(Q(question_text__icontains=search) | Q(explanation__icontains=search))
     if subject_id:
         qs = qs.filter(subject_id=subject_id)
     if topic_id:
@@ -45,9 +49,20 @@ def question_list(request):
     if difficulty:
         qs = qs.filter(difficulty_level=difficulty)
 
-    return render(request, 'questions/list.html', {
-        'questions': qs.select_related('subject', 'topic')
-    })
+    paginator = Paginator(qs, 10)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    from subjects.models import Subject
+    context = {
+        'page_obj': page_obj,
+        'subjects': Subject.objects.filter(is_active=True),
+        'difficulty_range': range(1, 11),
+        'search': search,
+        'selected_subject': subject_id,
+        'selected_topic': topic_id,
+        'selected_difficulty': difficulty,
+    }
+    return render(request, 'questions/list.html', context)
 
 
 @role_required('admin', 'teacher')
@@ -77,3 +92,25 @@ def delete_question(request, pk):
     question.is_active = False
     question.save()
     return redirect('question_list')
+
+@role_required('admin', 'teacher', 'student')
+def question_detail(request, pk):
+    question = get_object_or_404(Question, pk=pk, is_active=True)
+    user = request.user
+
+    # Enforce the same visibility rule as the list view, at the object level too
+    is_visible = (
+        user.role == 'admin'
+        or (user.role == 'teacher' and (question.is_global or question.created_by_id == user.id))
+        or (user.role == 'student' and question.is_global and question.status == 'approved')
+    )
+    if not is_visible:
+        return HttpResponseForbidden("You cannot access this question.")
+
+    # Students never see the correct answer or explanation through the bank
+    show_answer = user.role in ('admin', 'teacher')
+
+    return render(request, 'questions/detail.html', {
+        'question': question,
+        'show_answer': show_answer,
+    })

@@ -1,29 +1,307 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<h3>Questions</h3>
 
-{% if user.role == 'admin' or user.role == 'teacher' %}
-    <a href="{% url 'add_question' %}" class="btn btn-primary btn-sm mb-2">+ Add Question</a>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-1">Question Bank</h4>
+        <p class="text-secondary mb-0">
+            Search, filter and manage questions.
+        </p>
+    </div>
+
+    {% if user.role == 'admin' or user.role == 'teacher' %}
+        <a href="{% url 'add_question' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i>
+            Add Question
+        </a>
+    {% endif %}
+</div>
+
+
+<!-- Filters -->
+<div class="card card-stat mb-4">
+    <div class="card-body">
+
+        <form method="get" class="row g-2">
+
+            <!-- Search -->
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ search }}"
+                    class="form-control"
+                    placeholder="Question or explanation"
+                >
+            </div>
+
+            <!-- Subject -->
+            <div class="col-md-3">
+                <label class="form-label">Subject</label>
+
+                <select
+                    name="subject"
+                    class="form-select"
+                    id="id_subject"
+                >
+                    <option value="">All Subjects</option>
+
+                    {% for s in subjects %}
+                        <option
+                            value="{{ s.id }}"
+                            {% if selected_subject == s.id|stringformat:"s" %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ s.name }}
+                        </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+            <!-- Topic -->
+            <div class="col-md-2">
+                <label class="form-label">Topic</label>
+
+                <select
+                    name="topic"
+                    class="form-select"
+                    id="id_topic"
+                >
+                    <option value="">All Topics</option>
+                </select>
+            </div>
+
+            <!-- Difficulty -->
+            <div class="col-md-2">
+                <label class="form-label">Difficulty</label>
+
+                <select
+                    name="difficulty"
+                    class="form-select"
+                >
+                    <option value="">All Levels</option>
+
+                    {% for lvl in difficulty_range %}
+                        <option
+                            value="{{ lvl }}"
+                            {% if selected_difficulty == lvl|stringformat:"s" %}
+                                selected
+                            {% endif %}
+                        >
+                            Level {{ lvl }}
+                        </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+            <!-- Filter -->
+            <div class="col-md-2 d-flex align-items-end gap-2">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    <i class="bi bi-funnel"></i>
+                    Filter
+                </button>
+
+                <a
+                    href="{% url 'question_list' %}"
+                    class="btn btn-outline-secondary"
+                >
+                    Clear
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+
+<!-- Question Table -->
+<div class="card card-stat">
+
+    <div class="card-body p-0">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Question</th>
+                        <th>Subject</th>
+                        <th>Topic</th>
+                        <th>Level</th>
+                        <th>Owner</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                {% for q in page_obj %}
+
+                    <tr>
+
+                        <td>
+                            <a
+                                href="{% url 'question_detail' q.pk %}"
+                                class="text-decoration-none"
+                            >
+                                {{ q.question_text|truncatechars:60 }}
+                            </a>
+                        </td>
+
+                        <td>
+                            {{ q.subject.name }}
+                        </td>
+
+                        <td>
+                            {{ q.topic.name }}
+                        </td>
+
+                        <td>
+                            <span class="badge bg-secondary">
+                                Level {{ q.difficulty_level }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {% if q.is_global %}
+                                <span class="badge bg-info">
+                                    Global
+                                </span>
+                            {% else %}
+                                {{ q.created_by.username }}
+                            {% endif %}
+                        </td>
+
+                        <td>
+
+                            {% if q.status == 'approved' %}
+
+                                <span class="badge bg-success">
+                                    Approved
+                                </span>
+
+                            {% elif q.status == 'pending' %}
+
+                                <span class="badge bg-warning text-dark">
+                                    Pending
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-danger">
+                                    Rejected
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td class="text-end">
+
+                            {% if user.role == 'admin' or q.created_by_id == user.id %}
+
+                                <a
+                                    href="{% url 'edit_question' q.pk %}"
+                                    class="btn btn-outline-primary btn-sm"
+                                >
+                                    Edit
+                                </a>
+
+                                <a
+                                    href="{% url 'delete_question' q.pk %}"
+                                    class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Deactivate this question?')"
+                                >
+                                    Delete
+                                </a>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+                        <td
+                            colspan="7"
+                            class="text-center text-secondary py-5"
+                        >
+                            No questions found.
+                        </td>
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+
+<nav class="mt-4">
+
+    <ul class="pagination justify-content-center">
+
+        {% if page_obj.has_previous %}
+
+            <li class="page-item">
+                <a
+                    class="page-link"
+                    href="?page={{ page_obj.previous_page_number }}&search={{ search }}&subject={{ selected_subject }}&topic={{ selected_topic }}&difficulty={{ selected_difficulty }}"
+                >
+                    Previous
+                </a>
+            </li>
+
+        {% endif %}
+
+        <li class="page-item active">
+            <span class="page-link">
+                Page {{ page_obj.number }}
+                of {{ page_obj.paginator.num_pages }}
+            </span>
+        </li>
+
+        {% if page_obj.has_next %}
+
+            <li class="page-item">
+                <a
+                    class="page-link"
+                    href="?page={{ page_obj.next_page_number }}&search={{ search }}&subject={{ selected_subject }}&topic={{ selected_topic }}&difficulty={{ selected_difficulty }}"
+                >
+                    Next
+                </a>
+            </li>
+
+        {% endif %}
+
+    </ul>
+
+</nav>
+
 {% endif %}
-
-<table class="table table-bordered">
-    <tr>
-        <th>Text</th>
-        <th>Subject</th>
-        <th>Topic</th>
-        <th>Difficulty</th>
-        <th>Global</th>
-    </tr>
-
-    {% for q in questions %}
-    <tr>
-        <td>{{ q.question_text|truncatechars:60 }}</td>
-        <td>{{ q.subject.name }}</td>
-        <td>{{ q.topic.name }}</td>
-        <td>{{ q.difficulty_level }}</td>
-        <td>{{ q.is_global }}</td>
-    </tr>
-    {% endfor %}
-</table>
 
 {% endblock %}

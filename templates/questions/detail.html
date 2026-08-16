@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card card-stat">
+
+    <div class="card-body">
+
+        <div class="mb-3">
+
+            <span class="badge bg-secondary">
+                {{ question.subject.name }}
+            </span>
+
+            <span class="badge bg-secondary">
+                {{ question.topic.name }}
+            </span>
+
+            <span class="badge bg-secondary">
+                Level {{ question.difficulty_level }}
+            </span>
+
+            {% if question.is_global %}
+                <span class="badge bg-info">
+                    Global
+                </span>
+            {% endif %}
+
+        </div>
+
+
+        <h4 class="mb-4">
+            {{ question.question_text }}
+        </h4>
+
+
+        <div class="list-group mb-4">
+
+            <div class="list-group-item
+                {% if show_answer and question.correct_option == 'A' %}
+                    list-group-item-success
+                {% endif %}
+            ">
+                <strong>A.</strong>
+                {{ question.option_a }}
+            </div>
+
+            <div class="list-group-item
+                {% if show_answer and question.correct_option == 'B' %}
+                    list-group-item-success
+                {% endif %}
+            ">
+                <strong>B.</strong>
+                {{ question.option_b }}
+            </div>
+
+            <div class="list-group-item
+                {% if show_answer and question.correct_option == 'C' %}
+                    list-group-item-success
+                {% endif %}
+            ">
+                <strong>C.</strong>
+                {{ question.option_c }}
+            </div>
+
+            <div class="list-group-item
+                {% if show_answer and question.correct_option == 'D' %}
+                    list-group-item-success
+                {% endif %}
+            ">
+                <strong>D.</strong>
+                {{ question.option_d }}
+            </div>
+
+        </div>
+
+
+        {% if show_answer %}
+
+            <div class="alert alert-success">
+
+                <strong>
+                    Correct Answer:
+                </strong>
+
+                {{ question.correct_option }}
+
+            </div>
+
+            {% if question.explanation %}
+
+                <div class="card bg-light border-0">
+
+                    <div class="card-body">
+
+                        <strong>Explanation</strong>
+
+                        <p class="mb-0 mt-2">
+                            {{ question.explanation }}
+                        </p>
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+        {% else %}
+
+            <div class="alert alert-info">
+
+                The correct answer and explanation are available
+                after you attempt this question in a test.
+
+            </div>
+
+        {% endif %}
+
+
+        <div class="mt-4">
+
+            <a
+                href="{% url 'question_list' %}"
+                class="btn btn-outline-secondary"
+            >
+                <i class="bi bi-arrow-left"></i>
+                Back to Question Bank
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
