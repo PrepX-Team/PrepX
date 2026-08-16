@@ -35,3 +35,12 @@ class Question(BaseModel):
 
     def __str__(self):
         return self.question_text[:50]
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['subject', 'topic']),
+            models.Index(fields=['difficulty_level']),
+            models.Index(fields=['created_by']),
+            models.Index(fields=['is_global', 'status', 'is_active']),
+        ]
+        ordering = ['-created_at']

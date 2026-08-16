@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.db.models import Count, Q
 from accounts.decorators import role_required
 from .models import Subject, Topic
 from .forms import SubjectForm, TopicForm
@@ -7,9 +9,20 @@ from .forms import SubjectForm, TopicForm
 
 @login_required
 def subject_list(request):
-    subjects = Subject.objects.filter(is_active=True).prefetch_related('topic_set')
-    return render(request, 'subjects/list.html', {'subjects': subjects})
+    subjects = Subject.objects.filter(
+        is_active=True
+    ).annotate(
+        topic_count=Count(
+            'topics',
+            filter=Q(topics__is_active=True)
+        )
+    )
 
+    return render(
+        request,
+        'subjects/list.html',
+        {'subjects': subjects}
+    )
 
 @role_required('admin')
 def add_subject(request):
@@ -35,3 +48,37 @@ def delete_subject(request, pk):
     subject.is_active = False   # soft delete
     subject.save()
     return redirect('subject_list')
+
+@login_required
+def topics_by_subject_api(request):
+    subject_id = request.GET.get('subject_id')
+    topics = Topic.objects.filter(
+        subject_id=subject_id, is_active=True
+    ).order_by('name').values('id', 'name')
+    return JsonResponse(list(topics), safe=False)
+
+@role_required('admin')
+def edit_subject(request, pk):
+    subject = get_object_or_404(
+        Subject,
+        pk=pk,
+        is_active=True
+    )
+
+    form = SubjectForm(
+        request.POST or None,
+        instance=subject
+    )
+
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        return redirect('subject_list')
+
+    return render(
+        request,
+        'subjects/add_subject.html',
+        {
+            'form': form,
+            'editing': True
+        }
+    )
