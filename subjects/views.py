@@ -11,7 +11,7 @@ def subject_list(request):
     return render(request, 'subjects/list.html', {'subjects': subjects})
 
 
-@role_required(['admin'])
+@role_required('admin')
 def add_subject(request):
     form = SubjectForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -20,7 +20,7 @@ def add_subject(request):
     return render(request, 'subjects/add_subject.html', {'form': form})
 
 
-@role_required(['admin'])
+@role_required('admin')
 def add_topic(request):
     form = TopicForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -29,7 +29,7 @@ def add_topic(request):
     return render(request, 'subjects/add_topic.html', {'form': form})
 
 
-@role_required(['admin'])
+@role_required('admin')
 def delete_subject(request, pk):
     subject = get_object_or_404(Subject, pk=pk)
     subject.is_active = False   # soft delete

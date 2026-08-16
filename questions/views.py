@@ -5,7 +5,7 @@ from .models import Question
 from .forms import QuestionForm
 
 
-@role_required(['admin', 'teacher'])
+@role_required('admin', 'teacher')
 def add_question(request):
     form = QuestionForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -19,7 +19,7 @@ def add_question(request):
     return render(request, 'questions/add_question.html', {'form': form})
 
 
-@role_required(['admin', 'teacher', 'student'])
+@role_required('admin', 'teacher', 'student')
 def question_list(request):
     user = request.user
 
@@ -50,7 +50,7 @@ def question_list(request):
     })
 
 
-@role_required(['admin', 'teacher'])
+@role_required('admin', 'teacher')
 def edit_question(request, pk):
     question = get_object_or_404(Question, pk=pk)
 
@@ -66,7 +66,7 @@ def edit_question(request, pk):
     return render(request, 'questions/add_question.html', {'form': form, 'editing': True})
 
 
-@role_required(['admin', 'teacher'])
+@role_required('admin', 'teacher')
 def delete_question(request, pk):
     question = get_object_or_404(Question, pk=pk)
 
