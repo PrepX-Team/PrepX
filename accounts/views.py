@@ -202,7 +202,8 @@ def admin_dashboard(request):
 def pending_teachers(request):
     teachers = User.objects.filter(
         role='teacher',
-        is_approved=False
+        is_approved=False,
+        is_active = True
     )
 
     return render(
