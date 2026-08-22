@@ -1,0 +1,4 @@
+MIN_TEST_NUMBER = 1
+MAX_TEST_NUMBER = 10
+QUESTIONS_PER_TEST = 20
+UNLOCK_PERCENTAGE = 75  # reserved for Part 3 — not used yet in Part 1
