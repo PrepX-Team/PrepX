@@ -7,7 +7,7 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ('Role Info', {'fields': ('role', 'is_approved')}),
     )
-    list_display = ('username', 'email', 'role', 'is_approved', 'is_staff')
+    list_display = ('id', 'username', 'email', 'role', 'is_approved', 'is_staff')
     list_filter = ('role', 'is_approved', 'is_staff')
 
 

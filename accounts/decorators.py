@@ -1,8 +1,8 @@
-from functools import wraps
+from functools import wraps  # wraps avoids 'wrapper' in the system logs
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
-from django.template.loader import render_to_string
+from django.template.loader import render_to_string # to load a custom HTML template directly into the Python logic
 
 
 def role_required(*allowed_roles):

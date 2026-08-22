@@ -66,7 +66,7 @@ def login_view(request):
         username = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
 
-        user = authenticate(
+        user = authenticate(  # checks and returns the User object if there is a match, or None if it fails
             request,
             username=username,
             password=password
@@ -121,8 +121,8 @@ def role_redirect(request):
 @role_required('student')
 def student_dashboard(request):
     context = {
-        'tests_attempted': 0,
-        'average_score': 0,
+        'tests_attempted': 0, # zeros will be replaced by actual database queries, calculating the student's real-time progress
+        'average_score': 0,   # in analytics module
         'topics_started': 0,
         'certificates_earned': 0,
     }
@@ -203,7 +203,7 @@ def pending_teachers(request):
     teachers = User.objects.filter(
         role='teacher',
         is_approved=False,
-        is_active = True
+        is_active=True
     )
 
     return render(
@@ -268,7 +268,7 @@ def profile_view(request):
 def edit_profile(request):
     form = ProfileEditForm(
         request.POST or None,
-        instance=request.user
+        instance=request.user # pre-fills the HTML form on the screen with the user's current data andupdate this specific existing record
     )
 
     if request.method == 'POST' and form.is_valid():
