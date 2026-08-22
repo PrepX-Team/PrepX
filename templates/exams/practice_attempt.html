@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h4>Attempt #{{ attempt.id }}</h4>
+
+<p>
+    Topic: {{ attempt.topic.name }}
+    |
+    Test: {{ attempt.test_number }}
+    |
+    Status: {{ attempt.status }}
+</p>
+
+<p>
+    Assigned Questions: {{ answers.count }}
+</p>
+
+<ol>
+    {% for a in answers %}
+    <li>
+        {{ a.question.question_text|truncatechars:80 }}
+    </li>
+    {% endfor %}
+</ol>
+
+<p class="text-secondary small">
+    The full test-taking interface arrives in Phase 3 Part 2.
+</p>
+{% endblock %}
