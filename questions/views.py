@@ -36,9 +36,9 @@ def question_list(request):
     qs = qs.select_related('subject', 'topic', 'created_by')
 
     search = request.GET.get('search', '').strip()
-    subject_id = request.GET.get('subject')
-    topic_id = request.GET.get('topic')
-    difficulty = request.GET.get('difficulty')
+    subject_id = request.GET.get('subject', '').strip()
+    topic_id = request.GET.get('topic', '').strip()
+    difficulty = request.GET.get('difficulty', '').strip()
 
     if search:
         qs = qs.filter(Q(question_text__icontains=search) | Q(explanation__icontains=search))
