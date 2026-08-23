@@ -25,6 +25,7 @@
     let saveTimeout = null;
     let saveInProgress = false;
     let saveQueued = false;
+    let isSubmitting = false;
 
     let lastAnswerChangeTime = 0;
 
@@ -59,6 +60,10 @@
     const nextButton = document.getElementById('btn-next');
     const reviewButton = document.getElementById('btn-review');
     const questionPanel = document.getElementById('question-panel');
+    const submitButton = document.getElementById('btn-submit');
+    const confirmSubmitButton = document.getElementById('btn-confirm-submit');
+    const submitSummary = document.getElementById('submit-summary');
+    const submitModal = document.getElementById('submitModal');
 
 
     // ------------------------------------------------------------
@@ -533,6 +538,87 @@
 
 
     // ------------------------------------------------------------
+    // Submission
+    // ------------------------------------------------------------
+
+    async function submitAttempt(isAutomatic = false) {
+        if (isSubmitting) {
+            return;
+        }
+
+        isSubmitting = true;
+
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+
+        if (confirmSubmitButton) {
+            confirmSubmitButton.disabled = true;
+            confirmSubmitButton.textContent = 'Submitting...';
+        }
+
+        /*
+         * Collect any time spent on the current question before
+         * the final save.
+         */
+        collectCurrentQuestionTime();
+
+        /*
+         * Best-effort final answer save.
+         *
+         * The server performs the authoritative evaluation during
+         * submission. We only try to persist the latest answer state
+         * before requesting finalization.
+         */
+        await saveCurrentQuestion();
+
+        try {
+            const result = await postJSON(
+                config.submitUrl,
+                {}
+            );
+
+            if (result.data.success) {
+                window.location.href = result.data.result_url;
+                return;
+            }
+
+            isSubmitting = false;
+
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+
+            if (confirmSubmitButton) {
+                confirmSubmitButton.disabled = false;
+                confirmSubmitButton.textContent = 'Submit Test';
+            }
+
+            showWarning(
+                result.data.error ||
+                'Submission failed. Please try again.'
+            );
+
+        } catch (error) {
+            isSubmitting = false;
+
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+
+            if (confirmSubmitButton) {
+                confirmSubmitButton.disabled = false;
+                confirmSubmitButton.textContent = 'Submit Test';
+            }
+
+            showWarning(
+                'Connection issue during submission. Please try again.'
+            );
+        }
+    }
+
+
+    // ------------------------------------------------------------
     // Navigation
     // ------------------------------------------------------------
 
@@ -592,32 +678,34 @@
     // ------------------------------------------------------------
 
     function tickTimer() {
-        if (!editable) {
-            updateTimerDisplay();
+        if (remaining <= 0) {
             return;
         }
 
-        remaining = Math.max(
-            0,
-            remaining - 1
-        );
+        remaining = Math.max(0, remaining - 1);
 
-        updateTimerDisplay();
+        const el = document.getElementById('timer-display');
 
-        if (remaining <= 0) {
+        el.textContent = formatTime(remaining);
+
+        el.className =
+            'fw-bold fs-5 ' +
+            (
+                remaining < 60
+                    ? 'text-danger'
+                    : remaining < 300
+                        ? 'text-warning'
+                        : ''
+            );
+
+        if (remaining <= 0 && editable && !isSubmitting) {
             setInterfaceEditable(false);
 
             showWarning(
-                'Time is up. This attempt is no longer editable.'
+                'Time is up. Submitting your test...'
             );
 
-            /*
-             * Do not pretend that this performs server-side
-             * submission. The server remains authoritative.
-             *
-             * The submission/auto-submit endpoint will be
-             * implemented in the submission step.
-             */
+            submitAttempt(true);
         }
     }
 
@@ -869,6 +957,42 @@
         reviewButton.addEventListener(
             'click',
             toggleReview
+        );
+    }
+    if (submitButton) {
+        submitButton.addEventListener(
+            'click',
+            function () {
+                if (!editable || isSubmitting) {
+                    return;
+                }
+
+                const total = config.questions.length;
+
+                const answered = config.questions.filter(
+                    question => question.selected_option
+                ).length;
+
+                const marked = config.questions.filter(
+                    question => question.marked_for_review
+                ).length;
+
+                if (submitSummary) {
+                    submitSummary.textContent =
+                        `Answered: ${answered} / ${total}. ` +
+                        `Unanswered: ${total - answered}. ` +
+                        `Marked for review: ${marked}.`;
+                }
+            }
+        );
+    }
+
+    if (confirmSubmitButton) {
+        confirmSubmitButton.addEventListener(
+            'click',
+            function () {
+                submitAttempt(false);
+            }
         );
     }
 
