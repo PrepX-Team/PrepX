@@ -1,12 +1,14 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.db import IntegrityError
+from django.utils import timezone
 from accounts.models import User
 from subjects.models import Subject, Topic
 from questions.models import Question
 from students.models import StudentProgress
 from .models import ExamAttempt, ExamAnswer
 from core.constants import QUESTIONS_PER_TEST
+from .services.timer import get_remaining_seconds, is_editable
 
 
 def make_questions(subject, topic, difficulty, count, admin):
@@ -156,3 +158,245 @@ class PracticeStabilityAndOwnershipTests(TestCase):
         q = attempt.answers.first().question
         with self.assertRaises(IntegrityError):
             ExamAnswer.objects.create(attempt=attempt, question=q, question_order=99)
+
+class AnswerPersistenceTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            'adm5',
+            'a5@x.com',
+            'pass12345',
+            role='admin',
+        )
+
+        self.student = User.objects.create_user(
+            'stu5',
+            's5@x.com',
+            'pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        self.other = User.objects.create_user(
+            'stu6',
+            's6@x.com',
+            'pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        self.subject = Subject.objects.create(name='ANS')
+        self.topic = Topic.objects.create(
+            subject=self.subject,
+            name='T',
+        )
+
+        make_questions(
+            self.subject,
+            self.topic,
+            1,
+            20,
+            self.admin,
+        )
+
+        self.client = Client()
+        self.client.login(
+            username='stu5',
+            password='pass12345',
+        )
+
+        self.client.post(
+            reverse(
+                'practice_start',
+                args=[self.topic.id, 1],
+            )
+        )
+
+        self.attempt = ExamAttempt.objects.get(
+            student__username='stu5'
+        )
+
+        self.qid = (
+            self.attempt.answers
+            .first()
+            .question_id
+        )
+
+    def _save(self, question_id, option):
+        import json
+
+        return self.client.post(
+            reverse(
+                'practice_answer_save',
+                args=[self.attempt.id],
+            ),
+            data=json.dumps({
+                'question_id': question_id,
+                'selected_option': option,
+            }),
+            content_type='application/json',
+        )
+
+    def test_answer_saves_and_updates(self):
+        self._save(self.qid, 'A')
+
+        answer = ExamAnswer.objects.get(
+            attempt=self.attempt,
+            question_id=self.qid,
+        )
+
+        self.assertEqual(
+            answer.selected_option,
+            'A',
+        )
+
+        self._save(self.qid, 'C')
+
+        answer.refresh_from_db()
+
+        self.assertEqual(
+            answer.selected_option,
+            'C',
+        )
+
+    def test_invalid_option_rejected(self):
+        response = self._save(
+            self.qid,
+            'Z',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
+    def test_unassigned_question_rejected(self):
+        other_q = Question.objects.create(
+            subject=self.subject,
+            topic=self.topic,
+            question_text='Other',
+            option_a='a',
+            option_b='b',
+            option_c='c',
+            option_d='d',
+            correct_option='A',
+            explanation='e',
+            difficulty_level=1,
+            created_by=self.admin,
+            is_global=True,
+            status='approved',
+        )
+
+        response = self._save(
+            other_q.id,
+            'A',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
+    def test_cannot_save_to_other_students_attempt(self):
+        self.client.logout()
+
+        self.client.login(
+            username='stu6',
+            password='pass12345',
+        )
+
+        response = self._save(
+            self.qid,
+            'A',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+    def test_locked_attempt_rejects_save(self):
+        self.attempt.status = 'submitted'
+        self.attempt.save()
+
+        response = self._save(
+            self.qid,
+            'A',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            409,
+        )
+
+class TimerTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            'adm6',
+            'a6@x.com',
+            'pass12345',
+            role='admin',
+        )
+
+        self.student = User.objects.create_user(
+            'stu7',
+            's7@x.com',
+            'pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        self.subject = Subject.objects.create(
+            name='TMR'
+        )
+
+        self.topic = Topic.objects.create(
+            subject=self.subject,
+            name='T',
+        )
+
+        make_questions(
+            self.subject,
+            self.topic,
+            1,
+            20,
+            self.admin,
+        )
+
+    def test_expired_attempt_has_zero_remaining_time(self):
+        attempt = ExamAttempt.objects.create(
+            student=self.student,
+            topic=self.topic,
+            test_number=1,
+            start_time=timezone.now()
+            - timezone.timedelta(minutes=31),
+            duration=30,
+            status='in_progress',
+        )
+
+        self.assertEqual(
+            get_remaining_seconds(attempt),
+            0,
+        )
+
+        self.assertFalse(
+            is_editable(attempt)
+        )
+
+    def test_fresh_attempt_is_editable(self):
+        attempt = ExamAttempt.objects.create(
+            student=self.student,
+            topic=self.topic,
+            test_number=1,
+            start_time=timezone.now(),
+            duration=30,
+            status='in_progress',
+        )
+
+        self.assertGreater(
+            get_remaining_seconds(attempt),
+            0,
+        )
+
+        self.assertTrue(
+            is_editable(attempt)
+        )
