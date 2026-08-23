@@ -8,6 +8,7 @@ from core.constants import (
     QUESTIONS_PER_TEST,
     MIN_TEST_NUMBER,
     MAX_TEST_NUMBER,
+    DEFAULT_PRACTICE_DURATION_MINUTES,
 )
 from ..models import ExamAttempt, ExamAnswer
 
@@ -86,7 +87,8 @@ def start_practice_attempt(student, topic, test_number):
             topic=topic,
             test_number=test_number,
             start_time=timezone.now(),
-            status="in_progress",
+            duration=DEFAULT_PRACTICE_DURATION_MINUTES,
+            status='in_progress',
         )
 
         ExamAnswer.objects.bulk_create(
