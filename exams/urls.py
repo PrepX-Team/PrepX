@@ -12,4 +12,6 @@ urlpatterns = [
     path("practice/attempt/<int:attempt_id>/",views.practice_attempt,name="practice_attempt",),
     path('practice/attempt/<int:attempt_id>/answer/', views.practice_answer_save, name='practice_answer_save'),
     path('practice/attempt/<int:attempt_id>/timer/', views.practice_timer_status, name='practice_timer_status'),
+    path('practice/attempt/<int:attempt_id>/submit/', views.practice_submit, name='practice_submit'),
+    path('practice/attempt/<int:attempt_id>/result/', views.practice_result, name='practice_result'),
 ]

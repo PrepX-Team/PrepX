@@ -15,14 +15,14 @@ admin.site.register(ExamSection)
 @admin.register(ExamAttempt)
 class ExamAttemptAdmin(admin.ModelAdmin):
     list_display = (
-        "student",
-        "topic",
-        "test_number",
-        "status",
-        "start_time",
-        "end_time",
-        "score",
-        "accuracy",
+        'student',
+        'topic',
+        'test_number',
+        'status',
+        'score',
+        'accuracy',
+        'start_time',
+        'end_time',
     )
 
     search_fields = (

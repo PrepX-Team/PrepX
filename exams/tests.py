@@ -9,6 +9,17 @@ from students.models import StudentProgress
 from .models import ExamAttempt, ExamAnswer
 from core.constants import QUESTIONS_PER_TEST
 from .services.timer import get_remaining_seconds, is_editable
+from .services.evaluation import (
+    calculate_score,
+    calculate_accuracy,
+    evaluate_answers,
+)
+import json
+
+from .services.submission import (
+    submit_practice_attempt,
+    update_student_progress_after_attempt,
+)
 
 
 def make_questions(subject, topic, difficulty, count, admin):
@@ -20,6 +31,75 @@ def make_questions(subject, topic, difficulty, count, admin):
             created_by=admin, is_global=True, status='approved',
         )
 
+def build_submitted_attempt(
+    student,
+    topic,
+    admin,
+    correct_n,
+    wrong_n,
+    unanswered_n,
+    test_number=1,
+):
+    """Helper: creates questions, starts an attempt, and sets answer states."""
+
+    make_questions(
+        topic.subject,
+        topic,
+        test_number,
+        correct_n + wrong_n + unanswered_n,
+        admin,
+    )
+
+    client = Client()
+    client.force_login(student)
+
+    client.post(
+        reverse(
+            'practice_start',
+            args=[topic.id, test_number],
+        )
+    )
+
+    attempt = ExamAttempt.objects.get(
+        student=student,
+        topic=topic,
+        test_number=test_number,
+    )
+
+    answers = list(
+        attempt.answers
+        .select_related('question')
+        .order_by('question_order')
+    )
+
+    i = 0
+
+    # Correct answers
+    for _ in range(correct_n):
+        answers[i].selected_option = (
+            answers[i].question.correct_option
+        )
+        answers[i].save()
+        i += 1
+
+    # Wrong answers
+    def wrong_option(correct):
+        return next(
+            option
+            for option in 'ABCD'
+            if option != correct
+        )
+
+    for _ in range(wrong_n):
+        answers[i].selected_option = wrong_option(
+            answers[i].question.correct_option
+        )
+        answers[i].save()
+        i += 1
+
+    # Remaining answers intentionally stay unanswered.
+
+    return attempt
 
 class PracticeAccessTests(TestCase):
     def setUp(self):
@@ -400,3 +480,697 @@ class TimerTests(TestCase):
         self.assertTrue(
             is_editable(attempt)
         )
+
+class EvaluationTests(TestCase):
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            'adme',
+            'ae@x.com',
+            'pass12345',
+            role='admin',
+        )
+
+        self.student = User.objects.create_user(
+            'stue',
+            'se@x.com',
+            'pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        self.subject = Subject.objects.create(
+            name='EVAL'
+        )
+
+        self.topic = Topic.objects.create(
+            subject=self.subject,
+            name='T',
+        )
+
+    def test_all_correct(self):
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            20,
+            0,
+            0,
+        )
+
+        c, i, u = evaluate_answers(attempt)
+
+        self.assertEqual(
+            (c, i, u),
+            (20, 0, 0),
+        )
+
+        self.assertEqual(
+            calculate_score(c),
+            20,
+        )
+
+        self.assertEqual(
+            calculate_accuracy(c, 20),
+            100.0,
+        )
+
+    def test_all_wrong(self):
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            0,
+            20,
+            0,
+        )
+
+        c, i, u = evaluate_answers(attempt)
+
+        self.assertEqual(
+            (c, i, u),
+            (0, 20, 0),
+        )
+
+        self.assertEqual(
+            calculate_accuracy(c, 20),
+            0.0,
+        )
+
+    def test_partial_with_unanswered(self):
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            15,
+            3,
+            2,
+        )
+
+        c, i, u = evaluate_answers(attempt)
+
+        self.assertEqual(
+            (c, i, u),
+            (15, 3, 2),
+        )
+
+        self.assertEqual(
+            c + i + u,
+            20,
+        )
+
+        self.assertEqual(
+            calculate_accuracy(c, 20),
+            75.0,
+        )
+
+    def test_zero_answered(self):
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            0,
+            0,
+            20,
+        )
+
+        c, i, u = evaluate_answers(attempt)
+
+        self.assertEqual(
+            (c, i, u),
+            (0, 0, 20),
+        )
+
+        self.assertEqual(
+            calculate_accuracy(c, 20),
+            0.0,
+        )
+
+class SubmissionTests(TestCase):
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            'adms',
+            'as@x.com',
+            'pass12345',
+            role='admin',
+        )
+
+        self.student = User.objects.create_user(
+            'stus',
+            'ss2@x.com',
+            'pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        self.other = User.objects.create_user(
+            'stuo',
+            'so@x.com',
+            'pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        self.subject = Subject.objects.create(
+            name='SUB'
+        )
+
+        self.topic = Topic.objects.create(
+            subject=self.subject,
+            name='T',
+        )
+
+        self.client = Client()
+
+    def test_student_can_submit_own_attempt(self):
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            15,
+            5,
+            0,
+        )
+
+        self.client.login(
+            username='stus',
+            password='pass12345',
+        )
+
+        response = self.client.post(
+            reverse(
+                'practice_submit',
+                args=[attempt.id],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        attempt.refresh_from_db()
+
+        self.assertEqual(
+            attempt.status,
+            'submitted',
+        )
+
+        self.assertEqual(
+            attempt.score,
+            15,
+        )
+
+        self.assertEqual(
+            attempt.accuracy,
+            75.0,
+        )
+
+    def test_other_student_cannot_submit(self):
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            15,
+            5,
+            0,
+        )
+
+        self.client.login(
+            username='stuo',
+            password='pass12345',
+        )
+
+        response = self.client.post(
+            reverse(
+                'practice_submit',
+                args=[attempt.id],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+    def test_double_submission_is_idempotent(self):
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            15,
+            5,
+            0,
+        )
+
+        submit_practice_attempt(attempt)
+
+        first_end_time = (
+            ExamAttempt.objects
+            .get(pk=attempt.pk)
+            .end_time
+        )
+
+        submit_practice_attempt(attempt)
+
+        second_end_time = (
+            ExamAttempt.objects
+            .get(pk=attempt.pk)
+            .end_time
+        )
+
+        self.assertEqual(
+            first_end_time,
+            second_end_time,
+        )
+
+    def test_submitted_attempt_answer_save_rejected(self):
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            15,
+            5,
+            0,
+        )
+
+        submit_practice_attempt(attempt)
+
+        self.client.login(
+            username='stus',
+            password='pass12345',
+        )
+
+        qid = attempt.answers.first().question_id
+
+        response = self.client.post(
+            reverse(
+                'practice_answer_save',
+                args=[attempt.id],
+            ),
+            data=json.dumps({
+                'question_id': qid,
+                'selected_option': 'A',
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            409,
+        )
+
+
+class ProgressionTests(TestCase):
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            'admp',
+            'ap@x.com',
+            'pass12345',
+            role='admin',
+        )
+
+        self.student = User.objects.create_user(
+            'stup',
+            'sp@x.com',
+            'pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        self.subject = Subject.objects.create(
+            name='PROG'
+        )
+
+        self.topic = Topic.objects.create(
+            subject=self.subject,
+            name='T',
+        )
+
+    def test_74_percent_does_not_unlock(self):
+        from students.models import StudentProgress
+
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            14,
+            6,
+            0,
+        )
+
+        submit_practice_attempt(attempt)
+
+        progress = StudentProgress.objects.get(
+            student=self.student,
+            topic=self.topic,
+        )
+
+        self.assertEqual(
+            progress.highest_unlocked_test,
+            1,
+        )
+
+    def test_75_percent_unlocks_next(self):
+        from students.models import StudentProgress
+
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            15,
+            5,
+            0,
+        )
+
+        submit_practice_attempt(attempt)
+
+        progress = StudentProgress.objects.get(
+            student=self.student,
+            topic=self.topic,
+        )
+
+        self.assertEqual(
+            progress.highest_unlocked_test,
+            2,
+        )
+
+    def test_progress_never_decreases(self):
+        from students.models import StudentProgress
+
+        StudentProgress.objects.create(
+            student=self.student,
+            topic=self.topic,
+            highest_unlocked_test=5,
+        )
+
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            5,
+            15,
+            0,
+        )
+
+        submit_practice_attempt(attempt)
+
+        progress = StudentProgress.objects.get(
+            student=self.student,
+            topic=self.topic,
+        )
+
+        self.assertEqual(
+            progress.highest_unlocked_test,
+            5,
+        )
+
+    def test_test_10_does_not_unlock_test_11(self):
+        from students.models import StudentProgress
+
+        StudentProgress.objects.create(
+            student=self.student,
+            topic=self.topic,
+            highest_unlocked_test=10,
+        )
+
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            20,
+            0,
+            0,
+            test_number=10,
+        )
+
+        submit_practice_attempt(attempt)
+
+        progress = StudentProgress.objects.get(
+            student=self.student,
+            topic=self.topic,
+        )
+
+        self.assertEqual(
+            progress.highest_unlocked_test,
+            10,
+        )
+
+
+class ResultAccessTests(TestCase):
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            'admr',
+            'ar@x.com',
+            'pass12345',
+            role='admin',
+        )
+
+        self.student = User.objects.create_user(
+            'stur',
+            'sr@x.com',
+            'pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        self.other = User.objects.create_user(
+            'stur2',
+            'sr2@x.com',
+            'pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        self.subject = Subject.objects.create(
+            name='RES'
+        )
+
+        self.topic = Topic.objects.create(
+            subject=self.subject,
+            name='T',
+        )
+
+        self.client = Client()
+
+    def test_owner_can_view_result(self):
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            15,
+            5,
+            0,
+        )
+
+        submit_practice_attempt(attempt)
+
+        self.client.login(
+            username='stur',
+            password='pass12345',
+        )
+
+        response = self.client.get(
+            reverse(
+                'practice_result',
+                args=[attempt.id],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            '15',
+        )
+
+    def test_other_student_cannot_view_result(self):
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            15,
+            5,
+            0,
+        )
+
+        submit_practice_attempt(attempt)
+
+        self.client.login(
+            username='stur2',
+            password='pass12345',
+        )
+
+        response = self.client.get(
+            reverse(
+                'practice_result',
+                args=[attempt.id],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+    def test_in_progress_attempt_has_no_result(self):
+        attempt = build_submitted_attempt(
+            self.student,
+            self.topic,
+            self.admin,
+            15,
+            5,
+            0,
+        )
+
+        self.client.login(
+            username='stur',
+            password='pass12345',
+        )
+
+        response = self.client.get(
+            reverse(
+                'practice_result',
+                args=[attempt.id],
+            ),
+            follow=True,
+        )
+
+        self.assertContains(
+            response,
+            'still in progress',
+        )
+
+
+class TimeoutSubmissionTests(TestCase):
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            'admt2',
+            'at2@x.com',
+            'pass12345',
+            role='admin',
+        )
+
+        self.student = User.objects.create_user(
+            'stut2',
+            'st2@x.com',
+            'pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        self.subject = Subject.objects.create(
+            name='TOUT'
+        )
+
+        self.topic = Topic.objects.create(
+            subject=self.subject,
+            name='T',
+        )
+
+    def test_expired_attempt_auto_finalizes_on_result_view(self):
+        make_questions(
+            self.subject,
+            self.topic,
+            1,
+            20,
+            self.admin,
+        )
+
+        attempt = ExamAttempt.objects.create(
+            student=self.student,
+            topic=self.topic,
+            test_number=1,
+            start_time=timezone.now()
+            - timezone.timedelta(minutes=31),
+            duration=30,
+            status='in_progress',
+        )
+
+        from exams.services.practice import get_eligible_questions
+
+        for i, q in enumerate(
+            get_eligible_questions(
+                self.topic,
+                1,
+            )
+        ):
+            ExamAnswer.objects.create(
+                attempt=attempt,
+                question=q,
+                question_order=i + 1,
+            )
+
+        client = Client()
+
+        client.login(
+            username='stut2',
+            password='pass12345',
+        )
+
+        response = client.get(
+            reverse(
+                'practice_result',
+                args=[attempt.id],
+            )
+        )
+
+        attempt.refresh_from_db()
+
+        self.assertEqual(
+            attempt.status,
+            'submitted',
+        )
+
+        self.assertIsNotNone(
+            attempt.end_time
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+    def test_expired_attempt_does_not_reset_timer(self):
+        make_questions(
+            self.subject,
+            self.topic,
+            1,
+            20,
+            self.admin,
+        )
+
+        original_start = (
+            timezone.now()
+            - timezone.timedelta(minutes=31)
+        )
+
+        attempt = ExamAttempt.objects.create(
+            student=self.student,
+            topic=self.topic,
+            test_number=1,
+            start_time=original_start,
+            duration=30,
+            status='in_progress',
+        )
+
+        from exams.services.submission import (
+            auto_finalize_if_expired,
+        )
+
+        auto_finalize_if_expired(attempt)
+
+        attempt.refresh_from_db()
+
+        self.assertEqual(
+            attempt.start_time,
+            original_start,
+        )
+

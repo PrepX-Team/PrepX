@@ -5,6 +5,10 @@
 
 <div id="exam-warning" class="alert alert-warning d-none" role="alert"></div>
 
+<!-- ============================================================
+     EXAM HEADER
+     ============================================================ -->
+
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <strong>{{ attempt.topic.subject.name }}</strong>
@@ -17,15 +21,31 @@
     </div>
 </div>
 
+
+<!-- ============================================================
+     QUESTION PANEL
+     ============================================================ -->
+
 <div id="question-panel" class="card p-3 mb-3">
 
-    <div id="q-progress" class="text-secondary small mb-2"></div>
+    <div
+        id="q-progress"
+        class="text-secondary small mb-2"
+    ></div>
 
-    <div id="q-text" class="mb-3"></div>
+    <div
+        id="q-text"
+        class="mb-3"
+    ></div>
 
     <div id="q-options"></div>
 
 </div>
+
+
+<!-- ============================================================
+     QUESTION NAVIGATION
+     ============================================================ -->
 
 <div class="d-flex gap-2 mb-3">
 
@@ -60,29 +80,122 @@
 
 </div>
 
+
+<!-- ============================================================
+     QUESTION PALETTE
+     ============================================================ -->
+
 <div
     id="palette"
     class="d-flex flex-wrap gap-1"
 ></div>
 
-<script id="exam-config" type="application/json">
-{
-    "attemptId": {{ attempt.id }},
-    "questions": {{ questions_json|safe }},
-    "remainingSeconds": {{ remaining_seconds }},
-    "editable": {{ editable|yesno:"true,false" }},
 
-    "idleThresholdSeconds": {{ idle_threshold_seconds }},
-    "rapidAnswerThresholdSeconds": {{ rapid_answer_threshold_seconds }},
-    "timerWarningSeconds": {{ timer_warning_seconds }},
-    "timerCriticalSeconds": {{ timer_critical_seconds }},
-    "autosaveSyncSeconds": {{ autosave_sync_seconds }},
+<!-- ============================================================
+     SUBMIT BUTTON
+     ============================================================ -->
 
-    "answerUrl": "{% url 'practice_answer_save' attempt.id %}",
-    "timerUrl": "{% url 'practice_timer_status' attempt.id %}",
-    "securityUrl": "{% url 'log_security_event' attempt.id %}"
-}
-</script>
+<div class="d-flex justify-content-end mt-3">
+
+    <button
+        id="btn-submit"
+        type="button"
+        class="btn btn-danger"
+        data-bs-toggle="modal"
+        data-bs-target="#submitModal"
+    >
+        Submit Test
+    </button>
+
+</div>
+
+
+<!-- ============================================================
+     SUBMIT CONFIRMATION MODAL
+     ============================================================ -->
+
+<div
+    class="modal fade"
+    id="submitModal"
+    tabindex="-1"
+    aria-labelledby="submitModalLabel"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5
+                    class="modal-title"
+                    id="submitModalLabel"
+                >
+                    Submit Test
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+
+            </div>
+
+
+            <div class="modal-body">
+
+                <p id="submit-summary">
+                    Preparing submission summary...
+                </p>
+
+                <p class="text-danger small mb-0">
+                    Once submitted, you cannot change your answers.
+                </p>
+
+            </div>
+
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    id="btn-confirm-submit"
+                    class="btn btn-danger"
+                >
+                    Submit Test
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ============================================================
+     EXAM CONFIGURATION
+
+     Django's json_script safely serializes the configuration
+     instead of manually constructing JSON in the HTML.
+     ============================================================ -->
+
+{{ exam_config|json_script:"exam-config" }}
+
+
+<!-- ============================================================
+     EXAM JAVASCRIPT
+     ============================================================ -->
 
 <script src="{% static 'js/exam.js' %}"></script>
 

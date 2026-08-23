@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 import json
@@ -22,6 +23,11 @@ from .services.practice import (
     get_eligible_questions,
     PracticeError,
 )
+from .services.submission import (
+    submit_practice_attempt,
+    auto_finalize_if_expired,
+    SubmissionError,
+)
 from core.constants import (
     MIN_TEST_NUMBER,
     MAX_TEST_NUMBER,
@@ -42,7 +48,10 @@ def _get_owned_attempt_or_none(request, attempt_id):
 @role_required('student')
 @require_POST
 def practice_answer_save(request, attempt_id):
-    attempt = _get_owned_attempt_or_none(request, attempt_id)
+    attempt = _get_owned_attempt_or_none(
+        request,
+        attempt_id,
+    )
 
     if attempt is None:
         return JsonResponse(
@@ -52,6 +61,8 @@ def practice_answer_save(request, attempt_id):
             },
             status=403,
         )
+
+    attempt = auto_finalize_if_expired(attempt)
 
     if not is_editable(attempt):
         return JsonResponse(
@@ -357,22 +368,163 @@ def practice_attempt(request, attempt_id):
         for answer in answers
     ]
 
+    exam_config = {
+        'attemptId': attempt.id,
+        'questions': questions_data,
+        'remainingSeconds': get_remaining_seconds(attempt),
+        'editable': is_editable(attempt),
+
+        # Practice interface configuration.
+        # Values originate from core/constants.py.
+        'idleThresholdSeconds': IDLE_THRESHOLD_SECONDS,
+        'rapidAnswerThresholdSeconds': RAPID_ANSWER_THRESHOLD_SECONDS,
+        'timerWarningSeconds': TIMER_WARNING_SECONDS,
+        'timerCriticalSeconds': TIMER_CRITICAL_SECONDS,
+        'autosaveSyncSeconds': AUTOSAVE_SYNC_SECONDS,
+
+        'answerUrl': reverse(
+            'practice_answer_save',
+            args=[attempt.id],
+        ),
+        'timerUrl': reverse(
+            'practice_timer_status',
+            args=[attempt.id],
+        ),
+        'securityUrl': reverse(
+            'log_security_event',
+            args=[attempt.id],
+        ),
+        'submitUrl': reverse(
+            'practice_submit',
+            args=[attempt.id],
+        ),
+    }
+
     return render(
         request,
         'exams/practice_attempt.html',
         {
             'attempt': attempt,
             'answers': answers,
-            'questions_json': json.dumps(questions_data),
-            'remaining_seconds': get_remaining_seconds(attempt),
-            'editable': is_editable(attempt),
-
-            # Practice interface configuration.
-            # Values originate from core/constants.py.
-            'idle_threshold_seconds': IDLE_THRESHOLD_SECONDS,
-            'rapid_answer_threshold_seconds': RAPID_ANSWER_THRESHOLD_SECONDS,
-            'timer_warning_seconds': TIMER_WARNING_SECONDS,
-            'timer_critical_seconds': TIMER_CRITICAL_SECONDS,
-            'autosave_sync_seconds': AUTOSAVE_SYNC_SECONDS,
+            'exam_config': exam_config,
         },
     )
+
+@role_required('student')
+@require_POST
+def practice_submit(request, attempt_id):
+    attempt = _get_owned_attempt_or_none(request, attempt_id)
+
+    if attempt is None:
+        return JsonResponse(
+            {
+                'success': False,
+                'error': 'Attempt not found.',
+            },
+            status=403,
+        )
+
+    try:
+        finalized = submit_practice_attempt(attempt)
+    except SubmissionError as error:
+        return JsonResponse(
+            {
+                'success': False,
+                'error': str(error),
+            },
+            status=409,
+        )
+
+    return JsonResponse({
+        'success': True,
+        'result_url': reverse(
+            'practice_result',
+            args=[finalized.id],
+        ),
+    })
+
+@role_required('student')
+def practice_result(request, attempt_id):
+    attempt = ExamAttempt.objects.filter(
+        pk=attempt_id,
+        student=request.user,
+    ).first()
+
+    if attempt is None:
+        return HttpResponseForbidden("Not found.")
+
+    attempt = auto_finalize_if_expired(attempt)
+
+    if attempt.status != 'submitted':
+        messages.info(
+            request,
+            "This test is still in progress.",
+        )
+        return redirect(
+            'practice_attempt',
+            attempt_id=attempt.id,
+        )
+
+    answers = (
+        attempt.answers
+        .select_related('question')
+        .order_by('question_order')
+    )
+
+    # Read the persisted evaluation state.
+    # No re-evaluation occurs here.
+    correct_count = sum(
+        1 for answer in answers
+        if answer.is_correct is True
+    )
+
+    incorrect_count = sum(
+        1 for answer in answers
+        if answer.is_correct is False
+    )
+
+    unanswered_count = sum(
+        1 for answer in answers
+        if answer.is_correct is None
+    )
+
+    time_taken = (
+        attempt.end_time - attempt.start_time
+        if attempt.end_time
+        else None
+    )
+
+    from students.models import StudentProgress
+
+    progress = StudentProgress.objects.filter(
+        student=request.user,
+        topic=attempt.topic,
+    ).first()
+
+    unlocked = (
+        progress.highest_unlocked_test
+        if progress
+        else MIN_TEST_NUMBER
+    )
+
+    next_test_unlocked = (
+        attempt.test_number < unlocked
+    )
+
+    return render(
+        request,
+        'exams/practice_result.html',
+        {
+            'attempt': attempt,
+            'answers': answers,
+            'correct_count': correct_count,
+            'incorrect_count': incorrect_count,
+            'unanswered_count': unanswered_count,
+            'time_taken': time_taken,
+            'next_test_unlocked': next_test_unlocked,
+            'is_last_test': (
+                attempt.test_number == MAX_TEST_NUMBER
+            ),
+        },
+    )
+

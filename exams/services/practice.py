@@ -11,6 +11,8 @@ from core.constants import (
     DEFAULT_PRACTICE_DURATION_MINUTES,
 )
 from ..models import ExamAttempt, ExamAnswer
+from .timer import is_expired
+from .submission import submit_practice_attempt
 
 
 class PracticeError(Exception):
@@ -58,11 +60,14 @@ def start_practice_attempt(student, topic, test_number):
         student=student,
         topic=topic,
         test_number=test_number,
-        status="in_progress",
+        status='in_progress',
     ).first()
 
     if existing:
-        return existing
+        if is_expired(existing):
+            existing = submit_practice_attempt(existing)
+        else:
+            return existing
 
     eligible = list(
         get_eligible_questions(topic, test_number)
