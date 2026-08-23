@@ -1,12 +1,21 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.views.decorators.http import require_POST
-from django.http import HttpResponseForbidden
+import json
+
+from django.http import (
+    JsonResponse,
+    HttpResponseForbidden,
+    HttpResponseBadRequest,
+)
+from django.utils import timezone
+
+from .services.timer import get_remaining_seconds, is_editable
+from .models import ExamAttempt, ExamAnswer
 
 from accounts.decorators import role_required
 from subjects.models import Subject, Topic
 
-from .models import ExamAttempt
 from .services.practice import (
     start_practice_attempt,
     get_unlocked_test_number,
@@ -17,8 +26,143 @@ from core.constants import (
     MIN_TEST_NUMBER,
     MAX_TEST_NUMBER,
     QUESTIONS_PER_TEST,
+    IDLE_THRESHOLD_SECONDS,
+    RAPID_ANSWER_THRESHOLD_SECONDS,
+    TIMER_WARNING_SECONDS,
+    TIMER_CRITICAL_SECONDS,
+    AUTOSAVE_SYNC_SECONDS,
 )
 
+def _get_owned_attempt_or_none(request, attempt_id):
+    return ExamAttempt.objects.filter(
+        pk=attempt_id,
+        student=request.user,
+    ).first()
+
+@role_required('student')
+@require_POST
+def practice_answer_save(request, attempt_id):
+    attempt = _get_owned_attempt_or_none(request, attempt_id)
+
+    if attempt is None:
+        return JsonResponse(
+            {
+                'success': False,
+                'error': 'Attempt not found.',
+            },
+            status=403,
+        )
+
+    if not is_editable(attempt):
+        return JsonResponse(
+            {
+                'success': False,
+                'error': 'This attempt is no longer editable.',
+            },
+            status=409,
+        )
+
+    try:
+        payload = json.loads(request.body)
+
+        question_id = int(payload.get('question_id'))
+        selected_option = payload.get('selected_option')
+        marked_for_review = payload.get('marked_for_review', False)
+        time_spent = int(payload.get('time_spent', 0))
+
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return JsonResponse(
+            {
+                'success': False,
+                'error': 'Invalid request.',
+            },
+            status=400,
+        )
+
+    # Validate selected option.
+    if selected_option not in (None, 'A', 'B', 'C', 'D'):
+        return JsonResponse(
+            {
+                'success': False,
+                'error': 'Invalid option.',
+            },
+            status=400,
+        )
+
+    # Validate marked_for_review.
+    if not isinstance(marked_for_review, bool):
+        return JsonResponse(
+            {
+                'success': False,
+                'error': 'Invalid review flag.',
+            },
+            status=400,
+        )
+
+    # Never trust question_id.
+    # It must belong to THIS attempt.
+    answer = ExamAnswer.objects.filter(
+        attempt=attempt,
+        question_id=question_id,
+    ).first()
+
+    if answer is None:
+        return JsonResponse(
+            {
+                'success': False,
+                'error': 'This question is not part of this attempt.',
+            },
+            status=400,
+        )
+
+    # time_spent is an incremental number of seconds reported
+    # since the previous save for this answer.
+    if not 0 <= time_spent <= 3600:
+        return JsonResponse(
+            {
+                'success': False,
+                'error': 'Invalid time value.',
+            },
+            status=400,
+        )
+
+    if selected_option is not None:
+        answer.selected_option = selected_option
+
+    answer.marked_for_review = marked_for_review
+    answer.time_spent += time_spent
+
+    answer.save(
+        update_fields=[
+            'selected_option',
+            'marked_for_review',
+            'time_spent',
+        ]
+    )
+
+    return JsonResponse({
+        'success': True,
+    })
+
+@role_required('student')
+def practice_timer_status(request, attempt_id):
+    attempt = _get_owned_attempt_or_none(request, attempt_id)
+
+    if attempt is None:
+        return JsonResponse(
+            {
+                'success': False,
+                'error': 'Attempt not found.',
+            },
+            status=403,
+        )
+
+    return JsonResponse({
+        'remaining_seconds': get_remaining_seconds(attempt),
+        'server_time': timezone.now().isoformat(),
+        'attempt_status': attempt.status,
+        'editable': is_editable(attempt),
+    })
 
 @role_required("student")
 def practice_home(request):
@@ -176,7 +320,7 @@ def practice_start(request, topic_id, test_number):
     )
 
 
-@role_required("student")
+@role_required('student')
 def practice_attempt(request, attempt_id):
     attempt = get_object_or_404(
         ExamAttempt,
@@ -190,15 +334,45 @@ def practice_attempt(request, attempt_id):
 
     answers = (
         attempt.answers
-        .select_related("question")
-        .order_by("question_order")
+        .select_related('question')
+        .order_by('question_order')
     )
+
+    # JSON-safe data for the frontend.
+    # NEVER include correct_option or explanation.
+    questions_data = [
+        {
+            'question_id': answer.question_id,
+            'order': answer.question_order,
+            'text': answer.question.question_text,
+            'options': {
+                'A': answer.question.option_a,
+                'B': answer.question.option_b,
+                'C': answer.question.option_c,
+                'D': answer.question.option_d,
+            },
+            'selected_option': answer.selected_option,
+            'marked_for_review': answer.marked_for_review,
+        }
+        for answer in answers
+    ]
 
     return render(
         request,
-        "exams/practice_attempt.html",
+        'exams/practice_attempt.html',
         {
-            "attempt": attempt,
-            "answers": answers,
+            'attempt': attempt,
+            'answers': answers,
+            'questions_json': json.dumps(questions_data),
+            'remaining_seconds': get_remaining_seconds(attempt),
+            'editable': is_editable(attempt),
+
+            # Practice interface configuration.
+            # Values originate from core/constants.py.
+            'idle_threshold_seconds': IDLE_THRESHOLD_SECONDS,
+            'rapid_answer_threshold_seconds': RAPID_ANSWER_THRESHOLD_SECONDS,
+            'timer_warning_seconds': TIMER_WARNING_SECONDS,
+            'timer_critical_seconds': TIMER_CRITICAL_SECONDS,
+            'autosave_sync_seconds': AUTOSAVE_SYNC_SECONDS,
         },
     )

@@ -270,7 +270,7 @@
             <li class="page-item">
                 <a
                     class="page-link"
-                    href="?page={{ page_obj.previous_page_number }}&search={{ search }}&subject={{ selected_subject }}&topic={{ selected_topic }}&difficulty={{ selected_difficulty }}"
+                    href="{% querystring page=page_obj.previous_page_number %}"
                 >
                     Previous
                 </a>
@@ -290,7 +290,7 @@
             <li class="page-item">
                 <a
                     class="page-link"
-                    href="?page={{ page_obj.next_page_number }}&search={{ search }}&subject={{ selected_subject }}&topic={{ selected_topic }}&difficulty={{ selected_difficulty }}"
+                    href="{% querystring page=page_obj.next_page_number %}"
                 >
                     Next
                 </a>
