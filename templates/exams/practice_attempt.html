@@ -1,29 +1,89 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<h4>Attempt #{{ attempt.id }}</h4>
 
-<p>
-    Topic: {{ attempt.topic.name }}
-    |
-    Test: {{ attempt.test_number }}
-    |
-    Status: {{ attempt.status }}
-</p>
+<div id="exam-warning" class="alert alert-warning d-none" role="alert"></div>
 
-<p>
-    Assigned Questions: {{ answers.count }}
-</p>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <strong>{{ attempt.topic.subject.name }}</strong>
+        — {{ attempt.topic.name }}
+        — Test {{ attempt.test_number }}
+    </div>
 
-<ol>
-    {% for a in answers %}
-    <li>
-        {{ a.question.question_text|truncatechars:80 }}
-    </li>
-    {% endfor %}
-</ol>
+    <div id="timer-display" class="fw-bold fs-5">
+        --:--
+    </div>
+</div>
 
-<p class="text-secondary small">
-    The full test-taking interface arrives in Phase 3 Part 2.
-</p>
+<div id="question-panel" class="card p-3 mb-3">
+
+    <div id="q-progress" class="text-secondary small mb-2"></div>
+
+    <div id="q-text" class="mb-3"></div>
+
+    <div id="q-options"></div>
+
+</div>
+
+<div class="d-flex gap-2 mb-3">
+
+    <button
+        id="btn-prev"
+        type="button"
+        class="btn btn-outline-secondary btn-sm"
+    >
+        Previous
+    </button>
+
+    <button
+        id="btn-review"
+        type="button"
+        class="btn btn-outline-warning btn-sm"
+    >
+        Mark for Review
+    </button>
+
+    <button
+        id="btn-next"
+        type="button"
+        class="btn btn-outline-secondary btn-sm"
+    >
+        Next
+    </button>
+
+    <span
+        id="save-status"
+        class="small text-secondary ms-auto"
+    ></span>
+
+</div>
+
+<div
+    id="palette"
+    class="d-flex flex-wrap gap-1"
+></div>
+
+<script id="exam-config" type="application/json">
+{
+    "attemptId": {{ attempt.id }},
+    "questions": {{ questions_json|safe }},
+    "remainingSeconds": {{ remaining_seconds }},
+    "editable": {{ editable|yesno:"true,false" }},
+
+    "idleThresholdSeconds": {{ idle_threshold_seconds }},
+    "rapidAnswerThresholdSeconds": {{ rapid_answer_threshold_seconds }},
+    "timerWarningSeconds": {{ timer_warning_seconds }},
+    "timerCriticalSeconds": {{ timer_critical_seconds }},
+    "autosaveSyncSeconds": {{ autosave_sync_seconds }},
+
+    "answerUrl": "{% url 'practice_answer_save' attempt.id %}",
+    "timerUrl": "{% url 'practice_timer_status' attempt.id %}",
+    "securityUrl": "{% url 'log_security_event' attempt.id %}"
+}
+</script>
+
+<script src="{% static 'js/exam.js' %}"></script>
+
 {% endblock %}

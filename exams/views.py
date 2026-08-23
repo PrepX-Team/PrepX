@@ -26,6 +26,11 @@ from core.constants import (
     MIN_TEST_NUMBER,
     MAX_TEST_NUMBER,
     QUESTIONS_PER_TEST,
+    IDLE_THRESHOLD_SECONDS,
+    RAPID_ANSWER_THRESHOLD_SECONDS,
+    TIMER_WARNING_SECONDS,
+    TIMER_CRITICAL_SECONDS,
+    AUTOSAVE_SYNC_SECONDS,
 )
 
 def _get_owned_attempt_or_none(request, attempt_id):
@@ -361,5 +366,13 @@ def practice_attempt(request, attempt_id):
             'questions_json': json.dumps(questions_data),
             'remaining_seconds': get_remaining_seconds(attempt),
             'editable': is_editable(attempt),
+
+            # Practice interface configuration.
+            # Values originate from core/constants.py.
+            'idle_threshold_seconds': IDLE_THRESHOLD_SECONDS,
+            'rapid_answer_threshold_seconds': RAPID_ANSWER_THRESHOLD_SECONDS,
+            'timer_warning_seconds': TIMER_WARNING_SECONDS,
+            'timer_critical_seconds': TIMER_CRITICAL_SECONDS,
+            'autosave_sync_seconds': AUTOSAVE_SYNC_SECONDS,
         },
     )
