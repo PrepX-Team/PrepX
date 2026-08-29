@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+
+{% block title %} - Review Exam{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- HEADER -->
+
+    <div class="mb-4">
+
+        <h4>Review Exam</h4>
+
+        <p class="text-muted mb-0">
+            Review the exam before launching it.
+        </p>
+
+    </div>
+
+
+    <!-- EXAM DETAILS -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header">
+            <strong>Exam Details</strong>
+        </div>
+
+        <div class="card-body">
+
+            <div class="row g-3">
+
+                <div class="col-md-6">
+
+                    <div class="text-muted small">
+                        Exam Name
+                    </div>
+
+                    <div class="fw-semibold">
+                        {{ exam.exam_name }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <div class="text-muted small">
+                        Duration
+                    </div>
+
+                    <div class="fw-semibold">
+                        {{ exam.duration_minutes }} Minutes
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-3">
+
+                    <div class="text-muted small">
+                        Negative Marking
+                    </div>
+
+                    <div class="fw-semibold">
+
+                        {% if exam.negative_marking_enabled %}
+
+                            <span class="text-danger">
+                                Enabled
+                            </span>
+
+                        {% else %}
+
+                            <span class="text-success">
+                                Disabled
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                {% if exam.negative_marking_enabled %}
+
+                    <div class="col-md-3">
+
+                        <div class="text-muted small">
+                            Negative Marks
+                        </div>
+
+                        <div class="fw-semibold">
+                            {{ exam.negative_marks }}
+                        </div>
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- SUMMARY -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-6">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body text-center">
+
+                    <div class="text-muted">
+                        Total Questions
+                    </div>
+
+                    <h3 class="mb-0">
+                        {{ total_questions }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-6">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body text-center">
+
+                    <div class="text-muted">
+                        Total Marks
+                    </div>
+
+                    <h3 class="mb-0">
+                        {{ total_marks }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- QUESTIONS -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header">
+
+            <strong>
+                Selected Questions
+            </strong>
+
+        </div>
+
+
+        {% if selected_questions %}
+
+            <div class="card-body p-0">
+
+                {% for item in selected_questions %}
+
+                    <div class="border-bottom p-3">
+
+                        <div class="row">
+
+                            <div class="col-md-9">
+
+                                <div class="fw-semibold mb-2">
+
+                                    Q{{ forloop.counter }}.
+                                    {{ item.question.question_text }}
+
+                                </div>
+
+
+                                <div class="small text-muted">
+
+                                    Subject:
+                                    {{ item.question.subject.name }}
+
+                                    &nbsp; • &nbsp;
+
+                                    Topic:
+                                    {{ item.question.topic.name }}
+
+                                    &nbsp; • &nbsp;
+
+                                    Level:
+                                    {{ item.question.difficulty_level }}
+
+                                    &nbsp; • &nbsp;
+
+                                    {% if item.question.is_global %}
+
+                                        <span class="text-success">
+                                            Global
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="text-primary">
+                                            My Question
+                                        </span>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-3 text-md-end mt-2 mt-md-0">
+
+                                <span class="badge bg-primary fs-6">
+
+                                    {{ item.marks }} Marks
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="card-body">
+
+                <div class="alert alert-warning mb-0">
+
+                    No questions have been selected.
+
+                </div>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ACTIONS -->
+
+    <div class="d-flex justify-content-between">
+
+        <a
+            href="{% url 'teacher_select_exam_questions' exam.id %}"
+            class="btn btn-outline-secondary"
+        >
+            <i class="bi bi-arrow-left"></i>
+            Back to Questions
+        </a>
+
+
+        {% if total_questions > 0 %}
+
+            <form
+                method="post"
+                action="{% url 'teacher_launch_exam' exam.id %}"
+            >
+                {% csrf_token %}
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Launch Exam
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+
+            </form>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}
