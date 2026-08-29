@@ -10,29 +10,18 @@
     <title>PrepX{% block title %}{% endblock %}</title>
 
     <!-- Bootstrap -->
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Bootstrap Icons -->
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-        rel="stylesheet"
-    >
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- PrepX Custom CSS -->
-    <link
-        href="{% static 'css/app.css' %}"
-        rel="stylesheet"
-    >
+    <link href="{% static 'css/app.css' %}" rel="stylesheet">
 </head>
 
 <body>
 
-<!-- ================================
-     NAVBAR
-     ================================ -->
+<!-- NAVBAR -->
 
 <nav class="navbar navbar-dark navbar-prepx px-3">
 
@@ -81,10 +70,7 @@
                         <form method="post" action="{% url 'logout' %}">
                             {% csrf_token %}
 
-                            <button
-                                class="dropdown-item text-danger"
-                                type="submit"
-                            >
+                            <button class="dropdown-item text-danger" type="submit">
                                 <i class="bi bi-box-arrow-right"></i>
                                 Logout
                             </button>
@@ -102,9 +88,7 @@
 </nav>
 
 
-<!-- ================================
-     MAIN LAYOUT
-     ================================ -->
+<!-- MAIN LAYOUT -->
 
 <div class="container-fluid">
 
@@ -134,9 +118,7 @@
         {% endif %}
 
 
-                <!-- ================================
-                     DJANGO MESSAGES
-                     ================================ -->
+                <!-- DJANGO MESSAGES -->
 
                 {% for message in messages %}
 
@@ -159,9 +141,7 @@
                 {% endfor %}
 
 
-                <!-- ================================
-                     PAGE CONTENT
-                     ================================ -->
+                <!-- PAGE CONTENT -->
 
                 {% block content %}
 
@@ -175,9 +155,7 @@
 </div>
 
 
-<!-- ================================
-     BOOTSTRAP JAVASCRIPT
-     ================================ -->
+<!-- BOOTSTRAP JAVASCRIPT -->
 
 <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"

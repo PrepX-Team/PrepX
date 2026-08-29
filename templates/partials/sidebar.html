@@ -3,22 +3,22 @@
     {% if user.role == 'student' %}
 
         <li class="nav-item">
-            <a class="nav-link active" href="{% url 'student_dashboard' %}">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}" href="{% url 'student_dashboard' %}">
                 <i class="bi bi-speedometer2"></i>
                 Dashboard
             </a>
         </li>
 
         <li class="nav-item">
-            <a class="nav-link disabled" href="#">
+            <a class="nav-link {% if request.resolver_match.url_name == 'practice_home' %}active{% endif %}"
+               href="{% url 'practice_home' %}">
                 <i class="bi bi-pencil-square"></i>
                 Practice
-                <span class="badge bg-secondary">Soon</span>
             </a>
         </li>
 
         <li class="nav-item">
-            <a class="nav-link" href="{% url 'subject_list' %}">
+            <a class="nav-link {% if request.resolver_match.url_name == 'subject_list' %}active{% endif %}" href="{% url 'subject_list' %}">
                 <i class="bi bi-journal-bookmark"></i>
                 Subjects
             </a>
@@ -44,21 +44,21 @@
     {% elif user.role == 'teacher' %}
 
         <li class="nav-item">
-            <a class="nav-link active" href="{% url 'teacher_dashboard' %}">
+            <a class="nav-link {% if request.resolver_match.url_name == 'teacher_dashboard' %}active{% endif %}" href="{% url 'teacher_dashboard' %}">
                 <i class="bi bi-speedometer2"></i>
                 Dashboard
             </a>
         </li>
 
         <li class="nav-item">
-            <a class="nav-link" href="{% url 'question_list' %}">
+            <a class="nav-link {% if request.resolver_match.url_name == 'question_list' %}active{% endif %}" href="{% url 'question_list' %}">
                 <i class="bi bi-question-circle"></i>
                 Question Bank
             </a>
         </li>
 
         <li class="nav-item">
-            <a class="nav-link" href="{% url 'add_question' %}">
+            <a class="nav-link {% if request.resolver_match.url_name == 'add_question' %}active{% endif %}" href="{% url 'add_question' %}">
                 <i class="bi bi-plus-circle"></i>
                 Add Question
             </a>
@@ -76,35 +76,35 @@
     {% elif user.role == 'admin' %}
 
         <li class="nav-item">
-            <a class="nav-link active" href="{% url 'admin_dashboard' %}">
+            <a class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}" href="{% url 'admin_dashboard' %}">
                 <i class="bi bi-speedometer2"></i>
                 Dashboard
             </a>
         </li>
 
         <li class="nav-item">
-            <a class="nav-link" href="{% url 'pending_teachers' %}">
+            <a class="nav-link {% if request.resolver_match.url_name == 'pending_teachers' %}active{% endif %}" href="{% url 'pending_teachers' %}">
                 <i class="bi bi-person-check"></i>
                 Teacher Approvals
             </a>
         </li>
 
         <li class="nav-item">
-            <a class="nav-link" href="{% url 'subject_list' %}">
+            <a class="nav-link {% if request.resolver_match.url_name == 'subject_list' %}active{% endif %}" href="{% url 'subject_list' %}">
                 <i class="bi bi-journal-bookmark"></i>
                 Subjects
             </a>
         </li>
 
         <li class="nav-item">
-            <a class="nav-link" href="{% url 'question_list' %}">
+            <a class="nav-link {% if request.resolver_match.url_name == 'question_list' %}active{% endif %}" href="{% url 'question_list' %}">
                 <i class="bi bi-question-circle"></i>
                 Questions
             </a>
         </li>
 
         <li class="nav-item">
-            <a class="nav-link" href="/admin/">
+            <a class="nav-link {% if request.path == '/admin/' %}active{% endif %}" href="/admin/">
                 <i class="bi bi-gear"></i>
                 Django Admin
             </a>
@@ -116,7 +116,7 @@
     <!-- Common Profile Link -->
 
     <li class="nav-item mt-2">
-        <a class="nav-link" href="{% url 'profile' %}">
+        <a class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'profile' %}">
             <i class="bi bi-person"></i>
             Profile
         </a>

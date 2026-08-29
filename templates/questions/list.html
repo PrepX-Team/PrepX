@@ -2,7 +2,7 @@
 
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3" xmlns:s.id>
     <div>
         <h4 class="mb-1">Question Bank</h4>
         <p class="text-secondary mb-0">
@@ -270,7 +270,7 @@
             <li class="page-item">
                 <a
                     class="page-link"
-                    href="?page={{ page_obj.previous_page_number }}&search={{ search }}&subject={{ selected_subject }}&topic={{ selected_topic }}&difficulty={{ selected_difficulty }}"
+                    href="{% querystring page=page_obj.previous_page_number %}"
                 >
                     Previous
                 </a>
@@ -290,7 +290,7 @@
             <li class="page-item">
                 <a
                     class="page-link"
-                    href="?page={{ page_obj.next_page_number }}&search={{ search }}&subject={{ selected_subject }}&topic={{ selected_topic }}&difficulty={{ selected_difficulty }}"
+                    href="{% querystring page=page_obj.next_page_number %}"
                 >
                     Next
                 </a>

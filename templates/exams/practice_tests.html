@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h4>{{ topic.subject.name }} — {{ topic.name }}</h4>
+
+<div class="row g-2">
+    {% for t in tests %}
+    <div class="col-md-3">
+        <div class="card card-stat p-3 text-center">
+            <h5>Test {{ t.number }}</h5>
+
+            {% if not t.unlocked %}
+                <span class="badge bg-secondary mb-2">
+                    Locked
+                </span>
+
+                <p class="small text-secondary">
+                    Complete previous test to unlock.
+                </p>
+
+            {% elif not t.available %}
+                <span class="badge bg-warning text-dark mb-2">
+                    Unavailable
+                </span>
+
+                <p class="small text-secondary">
+                    Only {{ t.available_count }} of 20 questions ready.
+                </p>
+
+            {% else %}
+                <span class="badge bg-success mb-2">
+                    Unlocked
+                </span>
+
+                <a href="{% url 'practice_instructions' topic.id t.number %}"
+                   class="btn btn-primary btn-sm">
+                    Start Test
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

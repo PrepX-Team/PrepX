@@ -11,7 +11,7 @@ class Subject(BaseModel):
         constraints = [
             UniqueConstraint(Lower('name'), name='unique_subject_name_ci'),
         ]
-        ordering = ['name']
+        ordering = ['name']  # for sorting in ascending
 
     def save(self, *args, **kwargs):
         self.name = self.name.strip()
@@ -36,4 +36,4 @@ class Topic(BaseModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.subject.name} - {self.name}"
+        return f"{self.subject.name} - {self.name}" # QA - Average

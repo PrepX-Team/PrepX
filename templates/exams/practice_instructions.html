@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h4>Test {{ test_number }} — Instructions</h4>
+
+<ul>
+    <li>Subject: {{ topic.subject.name }}</li>
+    <li>Topic: {{ topic.name }}</li>
+    <li>Difficulty Level: {{ test_number }}</li>
+    <li>Questions: {{ questions_per_test }}</li>
+</ul>
+
+<form method="post"
+      action="{% url 'practice_start' topic.id test_number %}">
+    {% csrf_token %}
+
+    <button class="btn btn-primary">
+        Start Test
+    </button>
+</form>
+{% endblock %}

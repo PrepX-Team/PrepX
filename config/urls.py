@@ -22,6 +22,8 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('subjects/', include('subjects.urls')),
     path('questions/', include('questions.urls')),
+    path('exams/', include('exams.urls')),
+    path('security/', include('security.urls')),
 ]
 
 handler403 = 'accounts.views.custom_403'
