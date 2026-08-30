@@ -1,0 +1,790 @@
+{% extends 'base.html' %}
+
+{% block title %} - Exam Monitoring{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <div class="mb-4">
+
+        <h4>Exam Monitoring</h4>
+
+        <p class="text-muted mb-0">
+            {{ exam.exam_name }}
+        </p>
+
+    </div>
+
+
+    <div class="row g-4">
+
+        <!-- EXAM KEY -->
+
+        <div class="col-md-5">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body text-center p-4">
+
+                    <div class="text-muted mb-2">
+                        Exam Key
+                    </div>
+
+                    <div class="display-4 fw-bold">
+                        {{ exam.exam_key }}
+                    </div>
+
+                    <p class="text-muted mt-3 mb-0">
+                        Students can use this key to join the exam.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- STATUS -->
+
+        <div class="col-md-7">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body p-4">
+
+                    <h5>
+                        Exam Status
+                    </h5>
+
+                    <div class="mt-3" id="exam-status">
+
+                        {% if exam.status == 'waiting' %}
+
+                            <span class="badge bg-warning text-dark fs-6">
+                                Waiting for Students
+                            </span>
+
+                        {% elif exam.status == 'ongoing' %}
+
+                            <span class="badge bg-success fs-6">
+                                Exam Ongoing
+                            </span>
+
+                        {% elif exam.status == 'completed' %}
+
+                            <span class="badge bg-secondary fs-6">
+                                Exam Completed
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+
+                        <div class="col-6">
+
+                            <small class="text-muted">
+                                Duration
+                            </small>
+
+                            <div class="fw-semibold">
+                                {{ exam.duration_minutes }} minutes
+                            </div>
+
+                        </div>
+
+                        <div class="col-6">
+
+                            <small class="text-muted">
+                                Questions
+                            </small>
+
+                            <div class="fw-semibold">
+                                {{ exam.exam_questions.count }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- STUDENTS -->
+
+    <div class="card shadow-sm mt-4">
+
+        <div class="card-header">
+
+            <strong>
+                Joined Students
+            </strong>
+
+            <!-- LIVE STUDENT COUNT -->
+
+            <span
+                class="badge bg-primary"
+                id="participant-count"
+            >
+                {{ participants|length }}
+            </span>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>#</th>
+
+                            <th>Student</th>
+
+                            <th>Joined At</th>
+
+                            <th>Status</th>
+
+                            <th>Score</th>
+
+                            <th>Violations</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="participants-body">
+
+                        {% for participant in participants %}
+
+                            <tr>
+
+                                <td>
+                                    {{ forloop.counter }}
+                                </td>
+
+
+                                <td>
+
+                                    <strong>
+                                        {{ participant.student.username }}
+                                    </strong>
+
+                                    {% if participant.student.first_name or participant.student.last_name %}
+
+                                        <div class="small text-muted">
+                                            {{ participant.student.first_name }}
+                                            {{ participant.student.last_name }}
+                                        </div>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td>
+                                    {{ participant.joined_at|date:"d M Y, h:i A" }}
+                                </td>
+
+
+                                <td>
+
+                                    {% if participant.status == 'joined' %}
+
+                                        <span class="badge bg-primary">
+                                            Joined
+                                        </span>
+
+                                    {% elif participant.status == 'ongoing' %}
+
+                                        <span class="badge bg-success">
+                                            Ongoing
+                                        </span>
+
+                                    {% elif participant.status == 'submitted' %}
+
+                                        <span class="badge bg-secondary">
+                                            Submitted
+                                        </span>
+
+                                    {% elif participant.status == 'auto_submitted' %}
+
+                                        <span class="badge bg-danger">
+                                            Auto Submitted
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- SCORE -->
+
+                                <td>
+
+                                    {% if participant.status == 'submitted' or participant.status == 'auto_submitted' %}
+
+                                        <strong>
+                                            {{ participant.score }}
+                                        </strong>
+
+                                        <span class="text-muted">
+                                            / {{ participant.total_marks }}
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="text-muted">
+                                            —
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- VIOLATIONS -->
+
+                                <td>
+
+                                    <span class="badge bg-light text-dark">
+                                        {{ participant.violation_count }}
+                                    </span>
+
+                                </td>
+
+                            </tr>
+
+                        {% empty %}
+
+                            <tr>
+
+                                <td
+                                    colspan="6"
+                                    class="text-muted text-center py-4"
+                                >
+                                    No students have joined yet.
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- START / END EXAM -->
+
+    <div class="d-flex justify-content-end mt-4">
+
+        <div id="start-exam-section">
+
+            {% if exam.status == 'waiting' %}
+
+                <form
+                    method="post"
+                    action="{% url 'teacher_start_exam' exam.id %}"
+                >
+
+                    {% csrf_token %}
+
+                    <button
+                        type="submit"
+                        class="btn btn-success"
+                        id="start-exam-btn"
+                        {% if not participants %}disabled{% endif %}
+                    >
+
+                        <i class="bi bi-play-fill"></i>
+
+                        Start Exam
+
+                    </button>
+
+                </form>
+
+
+            {% elif exam.status == 'ongoing' %}
+
+                <form
+                    method="post"
+                    action="{% url 'teacher_end_exam' exam.id %}"
+                    onsubmit="return confirm('Are you sure you want to end this exam? All students who have not submitted will be auto-submitted.');"
+                >
+
+                    {% csrf_token %}
+
+                    <button
+                        type="submit"
+                        class="btn btn-danger"
+                    >
+
+                        <i class="bi bi-stop-circle"></i>
+
+                        End Exam
+
+                    </button>
+
+                </form>
+
+
+            {% elif exam.status == 'completed' %}
+
+                <span class="badge bg-secondary fs-6">
+
+                    <i class="bi bi-check-circle"></i>
+
+                    Exam Completed
+
+                </span>
+
+
+            {% else %}
+
+                <button
+                    type="button"
+                    class="btn btn-success"
+                    disabled
+                >
+
+                    <i class="bi bi-play-fill"></i>
+
+                    Start Exam
+
+                </button>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- LIVE EXAM MONITORING -->
+<!-- ========================================================= -->
+
+<script>
+
+function updateExamMonitor() {
+
+    fetch("{% url 'exam_monitor_data' exam.id %}")
+
+        .then(response => {
+
+            if (!response.ok) {
+
+                throw new Error(
+                    'Server returned ' + response.status
+                );
+
+            }
+
+            return response.json();
+
+        })
+
+        .then(data => {
+
+            console.log(
+                'Exam monitor update:',
+                data
+            );
+
+
+            /* =================================================
+               UPDATE EXAM STATUS
+               ================================================= */
+
+            const statusContainer =
+                document.getElementById('exam-status');
+
+
+            if (statusContainer) {
+
+                if (data.exam_status === 'waiting') {
+
+                    statusContainer.innerHTML = `
+                        <span class="badge bg-warning text-dark fs-6">
+                            Waiting for Students
+                        </span>
+                    `;
+
+                }
+
+                else if (data.exam_status === 'ongoing') {
+
+                    statusContainer.innerHTML = `
+                        <span class="badge bg-success fs-6">
+                            Exam Ongoing
+                        </span>
+                    `;
+
+                }
+
+                else if (data.exam_status === 'completed') {
+
+                    statusContainer.innerHTML = `
+                        <span class="badge bg-secondary fs-6">
+                            Exam Completed
+                        </span>
+                    `;
+
+                }
+
+            }
+
+
+            /* =================================================
+               GET PARTICIPANTS
+               ================================================= */
+
+            const participants =
+                data.participants || [];
+
+
+            /* =================================================
+               UPDATE PARTICIPANT COUNT
+               ================================================= */
+
+            const participantCount =
+                document.getElementById(
+                    'participant-count'
+                );
+
+
+            if (participantCount) {
+
+                participantCount.textContent =
+                    participants.length;
+
+            }
+
+
+            /* =================================================
+               UPDATE START EXAM BUTTON
+               ================================================= */
+
+            const startExamBtn =
+                document.getElementById(
+                    'start-exam-btn'
+                );
+
+
+            if (
+                startExamBtn &&
+                data.exam_status === 'waiting'
+            ) {
+
+                startExamBtn.disabled =
+                    participants.length === 0;
+
+            }
+
+
+            /* =================================================
+               UPDATE STUDENT TABLE
+               ================================================= */
+
+            const tbody =
+                document.getElementById(
+                    'participants-body'
+                );
+
+
+            if (!tbody) {
+                return;
+            }
+
+
+            tbody.innerHTML = '';
+
+
+            /* =================================================
+               NO STUDENTS
+               ================================================= */
+
+            if (participants.length === 0) {
+
+                tbody.innerHTML = `
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            class="text-muted text-center py-4"
+                        >
+                            No students have joined yet.
+                        </td>
+
+                    </tr>
+
+                `;
+
+                return;
+            }
+
+
+            /* =================================================
+               STUDENTS EXIST
+               ================================================= */
+
+            participants.forEach(
+                (participant, index) => {
+
+
+                    let statusBadge = '';
+
+
+                    /* =================================================
+                       STATUS
+                       ================================================= */
+
+                    if (
+                        participant.status === 'joined'
+                    ) {
+
+                        statusBadge = `
+
+                            <span class="badge bg-primary">
+                                Joined
+                            </span>
+
+                        `;
+
+                    }
+
+                    else if (
+                        participant.status === 'ongoing'
+                    ) {
+
+                        statusBadge = `
+
+                            <span class="badge bg-success">
+                                Ongoing
+                            </span>
+
+                        `;
+
+                    }
+
+                    else if (
+                        participant.status === 'submitted'
+                    ) {
+
+                        statusBadge = `
+
+                            <span class="badge bg-secondary">
+                                Submitted
+                            </span>
+
+                        `;
+
+                    }
+
+                    else if (
+                        participant.status === 'auto_submitted'
+                    ) {
+
+                        statusBadge = `
+
+                            <span class="badge bg-danger">
+                                Auto Submitted
+                            </span>
+
+                        `;
+
+                    }
+
+
+                    /* =================================================
+                       STUDENT NAME
+                       ================================================= */
+
+                    const fullName =
+                        `${participant.first_name || ''} ${participant.last_name || ''}`
+                        .trim();
+
+
+                    let studentName = '';
+
+
+                    if (fullName) {
+
+                        studentName = `
+
+                            <strong>
+                                ${participant.username}
+                            </strong>
+
+                            <div class="small text-muted">
+                                ${fullName}
+                            </div>
+
+                        `;
+
+                    }
+
+                    else {
+
+                        studentName = `
+
+                            <strong>
+                                ${participant.username}
+                            </strong>
+
+                        `;
+
+                    }
+
+
+                    /* =================================================
+                       SCORE
+                       ================================================= */
+
+                    let scoreDisplay = '—';
+
+
+                    if (
+                        participant.status === 'submitted' ||
+                        participant.status === 'auto_submitted'
+                    ) {
+
+                        scoreDisplay = `
+
+                            <strong>
+                                ${participant.score}
+                            </strong>
+
+                            <span class="text-muted">
+                                / ${participant.total_marks}
+                            </span>
+
+                        `;
+
+                    }
+
+
+                    /* =================================================
+                       ADD ROW
+                       ================================================= */
+
+                    tbody.innerHTML += `
+
+                        <tr>
+
+                            <td>
+                                ${index + 1}
+                            </td>
+
+                            <td>
+                                ${studentName}
+                            </td>
+
+                            <td>
+                                ${participant.joined_at}
+                            </td>
+
+                            <td>
+                                ${statusBadge}
+                            </td>
+
+                            <td>
+                                ${scoreDisplay}
+                            </td>
+
+                            <td>
+
+                                <span
+                                    class="badge bg-light text-dark"
+                                >
+                                    ${participant.violation_count}
+                                </span>
+
+                            </td>
+
+                        </tr>
+
+                    `;
+
+                }
+            );
+
+        })
+
+        .catch(error => {
+
+            console.error(
+                'Exam monitoring update failed:',
+                error
+            );
+
+        });
+
+}
+
+
+/* =============================================================
+   INITIAL UPDATE
+   ============================================================= */
+
+updateExamMonitor();
+
+
+/* =============================================================
+   LIVE UPDATE EVERY 2 SECONDS
+   ============================================================= */
+
+setInterval(
+    updateExamMonitor,
+    2000
+);
+
+</script>
+<script>
+    /*
+     * Prevent browser Back button from returning
+     * to exam setup / review pages.
+     */
+
+    history.pushState(null, '', location.href);
+
+    window.addEventListener('popstate', function () {
+
+        history.pushState(null, '', location.href);
+
+        window.location.href =
+            "{% url 'teacher_dashboard' %}";
+
+    });
+</script>
+
+{% endblock %}

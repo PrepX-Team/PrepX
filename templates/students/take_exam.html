@@ -1,0 +1,1817 @@
+{% extends 'base.html' %}
+
+{% block title %} - {{ exam.exam_name }}{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- ===================================================== -->
+    <!-- HEADER -->
+    <!-- ===================================================== -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h4>
+                {{ exam.exam_name }}
+            </h4>
+
+            <small class="text-muted">
+                Total Questions: {{ exam_questions|length }}
+            </small>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- TIMER + STATUS -->
+        <!-- ================================================= -->
+
+        <div class="d-flex align-items-center gap-3">
+
+            <!-- TIMER -->
+
+            <div
+                class="alert alert-warning mb-0 py-2 px-3"
+                id="exam-timer-container"
+            >
+
+                <i class="bi bi-clock"></i>
+
+                <strong>
+                    Time Left:
+                </strong>
+
+                <span id="exam-timer">
+                    Loading...
+                </span>
+
+            </div>
+
+
+            <!-- EXAM STATUS -->
+
+            <span class="badge bg-success fs-6">
+
+                <i class="bi bi-circle-fill"></i>
+
+                Exam Ongoing
+
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- QUESTION NAVIGATION -->
+    <!-- ===================================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-body">
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+
+                <strong>
+                    Questions
+                </strong>
+
+                <small class="text-muted">
+
+                    Question
+
+                    <span id="current-question-number">
+                        1
+                    </span>
+
+                    of
+
+                    {{ exam_questions|length }}
+
+                </small>
+
+            </div>
+
+
+            <div
+                class="d-flex flex-wrap gap-2"
+                id="question-navigation"
+            >
+
+                {% for exam_question in exam_questions %}
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary question-nav-btn"
+                        data-question="{{ forloop.counter }}"
+                    >
+
+                        {{ forloop.counter }}
+
+                    </button>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- EXAM FORM -->
+    <!-- ===================================================== -->
+
+    <form
+        method="post"
+        id="exam-form"
+    >
+
+        {% csrf_token %}
+
+
+        <!-- ================================================= -->
+        <!-- QUESTIONS -->
+        <!-- ================================================= -->
+
+        {% for exam_question in exam_questions %}
+
+            <div
+                class="question-card card shadow-sm mb-4"
+                id="question-{{ forloop.counter }}"
+                data-question-number="{{ forloop.counter }}"
+
+                {% if not forloop.first %}
+                    style="display: none;"
+                {% endif %}
+            >
+
+                <!-- QUESTION HEADER -->
+
+                <div
+                    class="card-header d-flex justify-content-between align-items-center"
+                >
+
+                    <strong>
+
+                        Question {{ forloop.counter }}
+
+                    </strong>
+
+
+                    <span class="text-muted">
+
+                        {{ exam_question.marks }}
+
+                        marks
+
+                    </span>
+
+                </div>
+
+
+                <!-- QUESTION BODY -->
+
+                <div class="card-body p-4">
+
+
+                    <!-- QUESTION TEXT -->
+
+                    <p class="fs-5 mb-4">
+
+                        {{ exam_question.question.question_text }}
+
+                    </p>
+
+
+                    <!-- ================================================= -->
+                    <!-- OPTION A -->
+                    <!-- ================================================= -->
+
+                    <div class="form-check mb-3">
+
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="question_{{ exam_question.id }}"
+                            value="A"
+                            id="q{{ exam_question.id }}_a"
+
+                            {% if exam_question.saved_option == 'A' %}
+                                checked
+                            {% endif %}
+                        >
+
+                        <label
+                            class="form-check-label"
+                            for="q{{ exam_question.id }}_a"
+                        >
+
+                            <strong>A.</strong>
+
+                            {{ exam_question.question.option_a }}
+
+                        </label>
+
+                    </div>
+
+
+                    <!-- ================================================= -->
+                    <!-- OPTION B -->
+                    <!-- ================================================= -->
+
+                    <div class="form-check mb-3">
+
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="question_{{ exam_question.id }}"
+                            value="B"
+                            id="q{{ exam_question.id }}_b"
+
+                            {% if exam_question.saved_option == 'B' %}
+                                checked
+                            {% endif %}
+                        >
+
+                        <label
+                            class="form-check-label"
+                            for="q{{ exam_question.id }}_b"
+                        >
+
+                            <strong>B.</strong>
+
+                            {{ exam_question.question.option_b }}
+
+                        </label>
+
+                    </div>
+
+
+                    <!-- ================================================= -->
+                    <!-- OPTION C -->
+                    <!-- ================================================= -->
+
+                    <div class="form-check mb-3">
+
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="question_{{ exam_question.id }}"
+                            value="C"
+                            id="q{{ exam_question.id }}_c"
+
+                            {% if exam_question.saved_option == 'C' %}
+                                checked
+                            {% endif %}
+                        >
+
+                        <label
+                            class="form-check-label"
+                            for="q{{ exam_question.id }}_c"
+                        >
+
+                            <strong>C.</strong>
+
+                            {{ exam_question.question.option_c }}
+
+                        </label>
+
+                    </div>
+
+
+                    <!-- ================================================= -->
+                    <!-- OPTION D -->
+                    <!-- ================================================= -->
+
+                    <div class="form-check mb-3">
+
+                        <input
+                            class="form-check-input"
+                            type="radio"
+                            name="question_{{ exam_question.id }}"
+                            value="D"
+                            id="q{{ exam_question.id }}_d"
+
+                            {% if exam_question.saved_option == 'D' %}
+                                checked
+                            {% endif %}
+                        >
+
+                        <label
+                            class="form-check-label"
+                            for="q{{ exam_question.id }}_d"
+                        >
+
+                            <strong>D.</strong>
+
+                            {{ exam_question.question.option_d }}
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        {% endfor %}
+
+
+        <!-- ===================================================== -->
+        <!-- NAVIGATION BUTTONS -->
+        <!-- ===================================================== -->
+
+        <div
+            class="d-flex justify-content-between align-items-center mb-5"
+        >
+
+
+            <!-- PREVIOUS -->
+
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="previous-btn"
+                disabled
+            >
+
+                <i class="bi bi-arrow-left"></i>
+
+                Previous
+
+            </button>
+
+
+            <!-- NEXT -->
+
+            <button
+                type="button"
+                class="btn btn-primary"
+                id="next-btn"
+            >
+
+                Next
+
+                <i class="bi bi-arrow-right"></i>
+
+            </button>
+
+
+            <!-- SUBMIT -->
+
+            <button
+                type="submit"
+                class="btn btn-success btn-lg"
+                id="submit-btn"
+                style="display: none;"
+            >
+
+                <i class="bi bi-check-circle"></i>
+
+                Submit Exam
+
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- EXAM JAVASCRIPT -->
+<!-- ========================================================= -->
+{% load static %}
+
+<script>
+    window.PREPX_SECURITY_EVENT_URL =
+        "{% url 'student_exam_security_event' exam.id %}";
+</script>
+
+<script src="{% static 'js/take_exam_security.js' %}"></script>
+
+
+<script>
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function () {
+
+
+        /* =====================================================
+           VARIABLES
+           ===================================================== */
+
+        const questionCards =
+            document.querySelectorAll(
+                '.question-card'
+            );
+
+
+        const navigationButtons =
+            document.querySelectorAll(
+                '.question-nav-btn'
+            );
+
+
+        const previousBtn =
+            document.getElementById(
+                'previous-btn'
+            );
+
+
+        const nextBtn =
+            document.getElementById(
+                'next-btn'
+            );
+
+
+        const submitBtn =
+            document.getElementById(
+                'submit-btn'
+            );
+
+
+        const currentQuestionNumber =
+            document.getElementById(
+                'current-question-number'
+            );
+
+
+        const examTimer =
+            document.getElementById(
+                'exam-timer'
+            );
+
+
+        const examTimerContainer =
+            document.getElementById(
+                'exam-timer-container'
+            );
+
+
+        const totalQuestions =
+            questionCards.length;
+
+
+        /* =====================================================
+           URLS
+           ===================================================== */
+
+        const timerStatusUrl =
+            "{% url 'student_exam_timer_status' exam.id %}";
+
+
+        const examStatusUrl =
+            "{% url 'student_exam_waiting_status' exam.id %}";
+
+
+        const autoSubmitUrl =
+            "{% url 'student_auto_submit_exam' exam.id %}";
+
+
+        const submittedUrl =
+            "{% url 'student_exam_submitted' exam.id %}";
+
+
+        /* =====================================================
+           TIMER VARIABLES
+           ===================================================== */
+
+        let remainingSeconds = null;
+
+        let timerInterval = null;
+
+
+        /* =====================================================
+           AUTO SUBMIT FLAG
+           ===================================================== */
+
+        let isSubmitting = false;
+
+
+        /* =====================================================
+           CURRENT QUESTION STORAGE
+           ===================================================== */
+
+        const currentQuestionStorageKey =
+            'prepx_exam_{{ exam.id }}_{{ participant.id }}_question';
+
+
+        let currentQuestion =
+            parseInt(
+                localStorage.getItem(
+                    currentQuestionStorageKey
+                )
+            ) || 1;
+
+
+        /*
+         * Make sure saved question number
+         * is valid.
+         */
+
+        if (
+            currentQuestion < 1 ||
+            currentQuestion > totalQuestions
+        ) {
+
+            currentQuestion = 1;
+
+        }
+
+
+        /* =====================================================
+           CSRF TOKEN
+           ===================================================== */
+
+        const csrfTokenElement =
+            document.querySelector(
+                '[name=csrfmiddlewaretoken]'
+            );
+
+
+        const csrfToken =
+            csrfTokenElement
+                ? csrfTokenElement.value
+                : '';
+
+
+        /* =====================================================
+           UPDATE TIMER DISPLAY
+           ===================================================== */
+
+        function updateTimerDisplay(
+            seconds
+        ) {
+
+            /*
+             * Never allow negative display.
+             */
+
+            if (
+                seconds < 0
+            ) {
+
+                seconds = 0;
+
+            }
+
+
+            /*
+             * Convert seconds into
+             * minutes and seconds.
+             */
+
+            const minutes =
+                Math.floor(
+                    seconds / 60
+                );
+
+
+            const secondsPart =
+                seconds % 60;
+
+
+            /*
+             * Format with two digits.
+             */
+
+            const formattedMinutes =
+                String(
+                    minutes
+                ).padStart(
+                    2,
+                    '0'
+                );
+
+
+            const formattedSeconds =
+                String(
+                    secondsPart
+                ).padStart(
+                    2,
+                    '0'
+                );
+
+
+            /*
+             * Update timer.
+             */
+
+            if (examTimer) {
+
+                examTimer.textContent =
+                    `${formattedMinutes}:${formattedSeconds}`;
+
+            }
+
+
+            /*
+             * Last one minute warning.
+             */
+
+            if (
+                examTimerContainer
+            ) {
+
+                if (
+                    seconds <= 60
+                ) {
+
+                    examTimerContainer.classList.remove(
+                        'alert-warning'
+                    );
+
+
+                    examTimerContainer.classList.add(
+                        'alert-danger'
+                    );
+
+                }
+
+                else {
+
+                    examTimerContainer.classList.remove(
+                        'alert-danger'
+                    );
+
+
+                    examTimerContainer.classList.add(
+                        'alert-warning'
+                    );
+
+                }
+
+            }
+
+        }
+
+
+        /* =====================================================
+           DISABLE EXAM
+           ===================================================== */
+
+        function disableExam() {
+
+            /*
+             * Disable all answer inputs.
+             */
+
+            questionCards.forEach(
+                function (card) {
+
+                    card.querySelectorAll(
+                        'input'
+                    ).forEach(
+                        function (input) {
+
+                            input.disabled = true;
+
+                        }
+                    );
+
+                }
+            );
+
+
+            /*
+             * Disable navigation.
+             */
+
+            if (previousBtn) {
+
+                previousBtn.disabled = true;
+
+            }
+
+
+            if (nextBtn) {
+
+                nextBtn.disabled = true;
+
+            }
+
+
+            if (submitBtn) {
+
+                submitBtn.disabled = true;
+
+            }
+
+
+            navigationButtons.forEach(
+                function (button) {
+
+                    button.disabled = true;
+
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           AUTO SUBMIT EXAM
+           ===================================================== */
+
+        /* =====================================================
+   AUTO SUBMIT EXAM
+   ===================================================== */
+
+        function autoSubmitExam() {
+
+            /*
+            * Prevent multiple auto-submit processes.
+            */
+
+            if (
+                document.body.dataset.autoSubmitting === 'true'
+            ) {
+
+                return;
+
+            }
+
+
+            document.body.dataset.autoSubmitting =
+                'true';
+
+
+            /*
+            * Disable exam controls.
+            */
+
+            questionCards.forEach(
+                function (card) {
+
+                    card.querySelectorAll(
+                        'input'
+                    ).forEach(
+                        function (input) {
+
+                            input.disabled = true;
+
+                        }
+                    );
+
+                }
+            );
+
+
+            nextBtn.disabled = true;
+
+            previousBtn.disabled = true;
+
+            submitBtn.disabled = true;
+
+
+            /*
+            * Show submitting message.
+            */
+
+            examTimer.textContent =
+                'Submitting...';
+
+
+            /*
+            * Function to send auto-submit request.
+            *
+            * If server says a tiny amount of time
+            * is still remaining, retry automatically.
+            */
+
+            function sendAutoSubmitRequest() {
+
+                fetch(
+                    "{% url 'student_auto_submit_exam' exam.id %}",
+                    {
+
+                        method: 'POST',
+
+                        headers: {
+
+                            'X-CSRFToken':
+                                csrfToken,
+
+                        },
+
+                    }
+                )
+
+                .then(
+                    function (response) {
+
+                        return response.json()
+                            .then(
+                                function (data) {
+
+                                    return {
+                                        ok: response.ok,
+                                        data: data,
+                                    };
+
+                                }
+                            );
+
+                    }
+                )
+
+                .then(
+                    function (result) {
+
+                        const data =
+                            result.data;
+
+
+                        console.log(
+                            'Auto submit response:',
+                            data
+                        );
+
+
+                        /*
+                        * SUCCESS
+                        */
+
+                        if (
+                            result.ok &&
+                            data.success &&
+                            data.redirect_url
+                        ) {
+
+                            window.location.href =
+                                data.redirect_url;
+
+                            return;
+
+                        }
+
+
+                        /*
+                        * Server says exam time has
+                        * not expired by a tiny amount.
+                        *
+                        * Wait one second and try again.
+                        */
+
+                        if (
+                            data.error ===
+                            'Exam time has not expired yet.'
+                        ) {
+
+                            console.log(
+                                'Exam has not expired on server yet. Retrying...'
+                            );
+
+
+                            setTimeout(
+                                sendAutoSubmitRequest,
+                                1000
+                            );
+
+
+                            return;
+
+                        }
+
+
+                        /*
+                        * Other server error.
+                        */
+
+                        console.error(
+                            'Auto-submit failed:',
+                            data.error
+                        );
+
+
+                        document.body.dataset.autoSubmitting =
+                            'false';
+
+                    }
+                )
+
+                .catch(
+                    function (error) {
+
+                        console.error(
+                            'Auto-submit request failed:',
+                            error
+                        );
+
+
+                        /*
+                        * Network/server temporary error.
+                        *
+                        * Retry after one second.
+                        */
+
+                        setTimeout(
+                            sendAutoSubmitRequest,
+                            1000
+                        );
+
+                    }
+                );
+
+            }
+
+
+            /*
+            * Start first request.
+            */
+
+            sendAutoSubmitRequest();
+
+        }
+
+
+        /* =====================================================
+           LOCAL COUNTDOWN
+           ===================================================== */
+
+        function startLocalCountdown() {
+
+            /*
+             * Prevent multiple intervals.
+             */
+
+            if (
+                timerInterval !== null
+            ) {
+
+                return;
+
+            }
+
+
+            timerInterval =
+                setInterval(
+                    function () {
+
+                        /*
+                         * No timer value yet.
+                         */
+
+                        if (
+                            remainingSeconds === null
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        /*
+                         * Decrease timer.
+                         */
+
+                        remainingSeconds--;
+
+
+                        /*
+                         * Timer expired.
+                         */
+
+                        if (
+                            remainingSeconds <= 0
+                        ) {
+
+                            remainingSeconds = 0;
+
+
+                            updateTimerDisplay(
+                                0
+                            );
+
+
+                            clearInterval(
+                                timerInterval
+                            );
+
+
+                            timerInterval = null;
+
+
+                            /*
+                             * Auto submit.
+                             */
+
+                            autoSubmitExam();
+
+
+                            return;
+
+                        }
+
+
+                        /*
+                         * Update display.
+                         */
+
+                        updateTimerDisplay(
+                            remainingSeconds
+                        );
+
+                    },
+                    1000
+                );
+
+        }
+
+
+        /* =====================================================
+           FETCH TIMER FROM SERVER
+           ===================================================== */
+
+        function fetchExamTimer() {
+
+            /*
+             * Don't continue timer requests
+             * after submission starts.
+             */
+
+            if (
+                isSubmitting
+            ) {
+
+                return;
+
+            }
+
+
+            fetch(
+                timerStatusUrl
+            )
+
+            .then(
+                function (response) {
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            'Server returned ' +
+                            response.status
+                        );
+
+                    }
+
+
+                    return response.json();
+
+                }
+            )
+
+            .then(
+                function (data) {
+
+                    /*
+                     * Server request failed.
+                     */
+
+                    if (
+                        !data.success
+                    ) {
+
+                        console.error(
+                            'Timer request failed:',
+                            data.error
+                        );
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * Server says exam expired.
+                     */
+
+                    if (
+                        data.expired
+                    ) {
+
+                        remainingSeconds = 0;
+
+
+                        updateTimerDisplay(
+                            0
+                        );
+
+
+                        if (
+                            timerInterval !== null
+                        ) {
+
+                            clearInterval(
+                                timerInterval
+                            );
+
+                            timerInterval = null;
+
+                        }
+
+
+                        autoSubmitExam();
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * Get exact remaining seconds.
+                     */
+
+                    remainingSeconds =
+                        data.remaining_seconds;
+
+
+                    /*
+                     * Update display.
+                     */
+
+                    updateTimerDisplay(
+                        remainingSeconds
+                    );
+
+
+                    /*
+                     * Start local countdown.
+                     */
+
+                    startLocalCountdown();
+
+                }
+            )
+
+            .catch(
+                function (error) {
+
+                    console.error(
+                        'Exam timer request failed:',
+                        error
+                    );
+
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           CHECK EXAM STATUS
+           ===================================================== */
+
+        function checkExamStatus() {
+
+            /*
+             * Don't check after submission.
+             */
+
+            if (
+                isSubmitting
+            ) {
+
+                return;
+
+            }
+
+
+            fetch(
+                examStatusUrl
+            )
+
+            .then(
+                function (response) {
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            'Server returned ' +
+                            response.status
+                        );
+
+                    }
+
+
+                    return response.json();
+
+                }
+            )
+
+            .then(
+                function (data) {
+
+                    /*
+                     * Invalid response.
+                     */
+
+                    if (
+                        !data.success
+                    ) {
+
+                        console.error(
+                            'Exam status check failed:',
+                            data.error
+                        );
+
+                        return;
+
+                    }
+
+
+                    console.log(
+                        'Current exam status:',
+                        data.exam_status
+                    );
+
+
+                    /*
+                     * Teacher has ended
+                     * the exam.
+                     */
+
+                    if (
+                        data.exam_status ===
+                        'completed'
+                    ) {
+
+                        /*
+                         * Stop timer.
+                         */
+
+                        if (
+                            timerInterval !== null
+                        ) {
+
+                            clearInterval(
+                                timerInterval
+                            );
+
+                            timerInterval = null;
+
+                        }
+
+
+                        /*
+                         * Mark submitting.
+                         */
+
+                        isSubmitting = true;
+
+
+                        /*
+                         * Disable exam controls.
+                         */
+
+                        disableExam();
+
+
+                        /*
+                         * Redirect immediately
+                         * to submitted page.
+                         */
+
+                        window.location.href =
+                            submittedUrl;
+
+                    }
+
+                }
+            )
+
+            .catch(
+                function (error) {
+
+                    console.error(
+                        'Exam status check failed:',
+                        error
+                    );
+
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           SHOW QUESTION
+           ===================================================== */
+
+        function showQuestion(
+            questionNumber
+        ) {
+
+            /*
+             * Hide all questions.
+             */
+
+            questionCards.forEach(
+                function (card) {
+
+                    card.style.display =
+                        'none';
+
+                }
+            );
+
+
+            /*
+             * Find selected question.
+             */
+
+            const selectedQuestion =
+                document.getElementById(
+                    'question-' +
+                    questionNumber
+                );
+
+
+            /*
+             * Display selected question.
+             */
+
+            if (
+                selectedQuestion
+            ) {
+
+                selectedQuestion.style.display =
+                    'block';
+
+            }
+
+
+            /*
+             * Update question counter.
+             */
+
+            if (
+                currentQuestionNumber
+            ) {
+
+                currentQuestionNumber.textContent =
+                    questionNumber;
+
+            }
+
+
+            /*
+             * Update navigation buttons.
+             */
+
+            navigationButtons.forEach(
+                function (button) {
+
+                    const buttonQuestion =
+                        parseInt(
+                            button.dataset.question
+                        );
+
+
+                    /*
+                     * Reset button style.
+                     */
+
+                    button.classList.remove(
+                        'btn-primary',
+                        'text-white'
+                    );
+
+
+                    button.classList.add(
+                        'btn-outline-secondary'
+                    );
+
+
+                    /*
+                     * Highlight current question.
+                     */
+
+                    if (
+                        buttonQuestion ===
+                        questionNumber
+                    ) {
+
+                        button.classList.remove(
+                            'btn-outline-secondary'
+                        );
+
+
+                        button.classList.add(
+                            'btn-primary',
+                            'text-white'
+                        );
+
+                    }
+
+                }
+            );
+
+
+            /*
+             * Previous button.
+             */
+
+            if (
+                previousBtn
+            ) {
+
+                if (
+                    questionNumber === 1
+                ) {
+
+                    previousBtn.disabled =
+                        true;
+
+                }
+
+                else {
+
+                    previousBtn.disabled =
+                        false;
+
+                }
+
+            }
+
+
+            /*
+             * Last question.
+             */
+
+            if (
+                questionNumber ===
+                totalQuestions
+            ) {
+
+                if (
+                    nextBtn
+                ) {
+
+                    nextBtn.style.display =
+                        'none';
+
+                }
+
+
+                if (
+                    submitBtn
+                ) {
+
+                    submitBtn.style.display =
+                        'inline-block';
+
+                }
+
+            }
+
+            else {
+
+                if (
+                    nextBtn
+                ) {
+
+                    nextBtn.style.display =
+                        'inline-block';
+
+                }
+
+
+                if (
+                    submitBtn
+                ) {
+
+                    submitBtn.style.display =
+                        'none';
+
+                }
+
+            }
+
+
+            /*
+             * Save current question.
+             */
+
+            localStorage.setItem(
+                currentQuestionStorageKey,
+                questionNumber
+            );
+
+        }
+
+
+        /* =====================================================
+           SAVE ANSWER
+           ===================================================== */
+
+        function saveAnswer(
+            radio
+        ) {
+
+            /*
+             * Don't save after exam ended.
+             */
+
+            if (
+                isSubmitting
+            ) {
+
+                return;
+
+            }
+
+
+            /*
+             * Extract question ID.
+             */
+
+            const examQuestionId =
+                radio.name.replace(
+                    'question_',
+                    ''
+                );
+
+
+            /*
+             * Create POST data.
+             */
+
+            const formData =
+                new FormData();
+
+
+            formData.append(
+                'selected_option',
+                radio.value
+            );
+
+
+            /*
+             * Save answer.
+             */
+
+            fetch(
+                `/students/exams/{{ exam.id }}/question/${examQuestionId}/save/`,
+                {
+
+                    method: 'POST',
+
+                    headers: {
+
+                        'X-CSRFToken':
+                            csrfToken,
+
+                    },
+
+                    body: formData,
+
+                }
+            )
+
+            .then(
+                function (response) {
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            'Server returned ' +
+                            response.status
+                        );
+
+                    }
+
+
+                    return response.json();
+
+                }
+            )
+
+            .then(
+                function (data) {
+
+                    if (
+                        !data.success
+                    ) {
+
+                        console.error(
+                            'Answer save failed:',
+                            data.error
+                        );
+
+                    }
+
+                }
+            )
+
+            .catch(
+                function (error) {
+
+                    console.error(
+                        'Answer save failed:',
+                        error
+                    );
+
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           OPTION CHANGE EVENT
+           ===================================================== */
+
+        document.querySelectorAll(
+            '.question-card input[type="radio"]'
+        ).forEach(
+            function (radio) {
+
+                radio.addEventListener(
+                    'change',
+                    function () {
+
+                        saveAnswer(
+                            this
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+
+        /* =====================================================
+           NEXT BUTTON
+           ===================================================== */
+
+        if (
+            nextBtn
+        ) {
+
+            nextBtn.addEventListener(
+                'click',
+                function () {
+
+                    if (
+                        currentQuestion <
+                        totalQuestions
+                    ) {
+
+                        currentQuestion++;
+
+
+                        showQuestion(
+                            currentQuestion
+                        );
+
+
+                        window.scrollTo({
+
+                            top: 0,
+
+                            behavior: 'smooth'
+
+                        });
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           PREVIOUS BUTTON
+           ===================================================== */
+
+        if (
+            previousBtn
+        ) {
+
+            previousBtn.addEventListener(
+                'click',
+                function () {
+
+                    if (
+                        currentQuestion >
+                        1
+                    ) {
+
+                        currentQuestion--;
+
+
+                        showQuestion(
+                            currentQuestion
+                        );
+
+
+                        window.scrollTo({
+
+                            top: 0,
+
+                            behavior: 'smooth'
+
+                        });
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           QUESTION NUMBER BUTTONS
+           ===================================================== */
+
+        navigationButtons.forEach(
+            function (button) {
+
+                button.addEventListener(
+                    'click',
+                    function () {
+
+                        currentQuestion =
+                            parseInt(
+                                button.dataset.question
+                            );
+
+
+                        showQuestion(
+                            currentQuestion
+                        );
+
+
+                        window.scrollTo({
+
+                            top: 0,
+
+                            behavior: 'smooth'
+
+                        });
+
+                    }
+                );
+
+            }
+        );
+
+
+        /* =====================================================
+           INITIAL QUESTION
+           ===================================================== */
+
+        showQuestion(
+            currentQuestion
+        );
+
+
+        /* =====================================================
+           INITIAL TIMER
+           ===================================================== */
+
+        fetchExamTimer();
+
+
+        /* =====================================================
+           SERVER TIMER SYNC
+           ===================================================== */
+
+        setInterval(
+            fetchExamTimer,
+            10000
+        );
+
+
+        /* =====================================================
+           LIVE TEACHER END CHECK
+           ===================================================== */
+
+        checkExamStatus();
+
+
+        setInterval(
+            checkExamStatus,
+            2000
+        );
+
+    }
+
+);
+
+</script>
+
+{% endblock %}

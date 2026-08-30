@@ -18,6 +18,14 @@
         </li>
 
         <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_join_exam' %}active{% endif %}"
+            href="{% url 'student_join_exam' %}">
+                <i class="bi bi-door-open"></i>
+                Join Exam
+            </a>
+        </li>
+
+        <li class="nav-item">
             <a class="nav-link {% if request.resolver_match.url_name == 'subject_list' %}active{% endif %}" href="{% url 'subject_list' %}">
                 <i class="bi bi-journal-bookmark"></i>
                 Subjects
@@ -65,13 +73,28 @@
         </li>
 
         <li class="nav-item">
-            <a class="nav-link disabled" href="#">
+            <a class="nav-link" href="{% url 'teacher_create_exam' %}">
                 <i class="bi bi-file-earmark-text"></i>
                 Create Exam
-                <span class="badge bg-secondary">Soon</span>
             </a>
         </li>
 
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'teacher_ongoing_exams' %}">
+                <i class="bi bi-file-earmark-text"></i>
+                Continue Ongoing Exam
+            </a>
+
+        </li>
+        
+
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'teacher_previous_conducted_exams' %}">
+                <i class="bi bi-file-earmark-text"></i>
+                Previous Conducted Exams
+            </a>
+
+        </li>
 
     {% elif user.role == 'admin' %}
 
