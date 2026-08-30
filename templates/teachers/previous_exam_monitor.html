@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+
+{% block title %} - Previous Exam{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <!-- HEADER -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h4>
+                Exam Details
+            </h4>
+
+            <p class="text-muted mb-0">
+                {{ exam.exam_name }}
+            </p>
+
+        </div>
+
+        <div>
+
+            <a
+                href="{% url 'teacher_previous_conducted_exams' %}"
+                class="btn btn-outline-secondary"
+            >
+                <i class="bi bi-arrow-left"></i>
+                Previous Exams
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- EXAM INFORMATION -->
+
+    <div class="row g-4">
+
+        <!-- EXAM KEY -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body text-center p-4">
+
+                    <div class="text-muted mb-2">
+                        Exam Key
+                    </div>
+
+                    <div class="display-6 fw-bold">
+                        {{ exam.exam_key }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- STATUS -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body p-4">
+
+                    <div class="text-muted">
+                        Status
+                    </div>
+
+                    <div class="mt-2">
+
+                        <span class="badge bg-secondary fs-6">
+                            Exam Completed
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- DURATION -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body p-4">
+
+                    <div class="text-muted">
+                        Duration
+                    </div>
+
+                    <div class="fw-semibold fs-5 mt-2">
+                        {{ exam.duration_minutes }} minutes
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- STATISTICS -->
+
+    <div class="row g-4 mt-1">
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Questions
+                    </div>
+
+                    <div class="fs-4 fw-bold">
+                        {{ exam.exam_questions.count }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Students
+                    </div>
+
+                    <div class="fs-4 fw-bold">
+                        {{ participants|length }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Started At
+                    </div>
+
+                    <div class="fw-semibold">
+
+                        {% if exam.started_at %}
+
+                            {{ exam.started_at|date:"d M Y, h:i A" }}
+
+                        {% else %}
+
+                            -
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- STUDENTS -->
+
+    <div class="card shadow-sm mt-4">
+
+        <div class="card-header">
+
+            <strong>
+                Student Results
+            </strong>
+
+        </div>
+
+
+        <div class="card-body">
+
+            {% if participants %}
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>#</th>
+
+                                <th>Student</th>
+
+                                <th>Joined At</th>
+
+                                <th>Submitted At</th>
+
+                                <th>Status</th>
+
+                                <th>Score</th>
+
+                                <th>Violations</th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for participant in participants %}
+
+                                <tr>
+
+                                    <td>
+                                        {{ forloop.counter }}
+                                    </td>
+
+
+                                    <td>
+
+                                        <strong>
+                                            {{ participant.student.username }}
+                                        </strong>
+
+                                        {% if participant.student.first_name or participant.student.last_name %}
+
+                                            <div class="small text-muted">
+
+                                                {{ participant.student.first_name }}
+                                                {{ participant.student.last_name }}
+
+                                            </div>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        {{ participant.joined_at|date:"d M Y, h:i A" }}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if participant.submitted_at %}
+
+                                            {{ participant.submitted_at|date:"d M Y, h:i A" }}
+
+                                        {% else %}
+
+                                            -
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if participant.status == 'submitted' %}
+
+                                            <span class="badge bg-secondary">
+                                                Submitted
+                                            </span>
+
+                                        {% elif participant.status == 'auto_submitted' %}
+
+                                            <span class="badge bg-danger">
+                                                Auto Submitted
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="badge bg-warning text-dark">
+                                                {{ participant.get_status_display }}
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <strong>
+                                            {{ participant.score }}
+                                        </strong>
+
+                                        <span class="text-muted">
+                                            / {{ participant.total_marks }}
+                                        </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <span class="badge bg-light text-dark">
+
+                                            {{ participant.violation_count }}
+
+                                        </span>
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="text-muted text-center py-4">
+
+                    No students participated in this exam.
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ACTIONS -->
+
+    <div class="d-flex justify-content-end mt-4 mb-5">
+
+        <a
+            href="{% url 'teacher_previous_conducted_exams' %}"
+            class="btn btn-outline-secondary"
+        >
+            <i class="bi bi-arrow-left"></i>
+            Back to Previous Exams
+        </a>
+
+        <a
+            href="{% url 'teacher_previous_exam_pdf' exam.id %}"
+            class="btn btn-danger"
+        >
+            <i class="bi bi-file-earmark-pdf"></i>
+            Download PDF Report
+        </a>
+
+    </div>
+
+</div>
+
+{% endblock %}

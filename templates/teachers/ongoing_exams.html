@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %} - Ongoing Exams{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <div class="mb-4">
+
+        <h4>
+            Ongoing Exams
+        </h4>
+
+        <p class="text-muted mb-0">
+            Continue monitoring your active exams.
+        </p>
+
+    </div>
+
+
+    {% if exams %}
+
+        <div class="row g-4">
+
+            {% for exam in exams %}
+
+                <div class="col-md-6 col-lg-4">
+
+                    <div class="card shadow-sm h-100">
+
+                        <div class="card-body">
+
+                            <div class="d-flex justify-content-between align-items-start">
+
+                                <h5 class="mb-0">
+                                    {{ exam.exam_name }}
+                                </h5>
+
+                                <span class="badge bg-success">
+                                    Ongoing
+                                </span>
+
+                            </div>
+
+                            <hr>
+
+                            <div class="small text-muted mb-3">
+
+                                <div class="mb-2">
+                                    <strong>Exam Key:</strong>
+                                    {{ exam.exam_key }}
+                                </div>
+
+                                <div class="mb-2">
+                                    <strong>Duration:</strong>
+                                    {{ exam.duration_minutes }} minutes
+                                </div>
+
+                                <div>
+                                    <strong>Started:</strong>
+                                    {{ exam.started_at|date:"d M Y, h:i A" }}
+                                </div>
+
+                            </div>
+
+
+                            <a
+                                href="{% url 'teacher_exam_monitor' exam.id %}"
+                                class="btn btn-primary w-100"
+                            >
+
+                                <i class="bi bi-display"></i>
+
+                                Continue Monitoring
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <div class="card shadow-sm">
+
+            <div class="card-body text-center py-5">
+
+                <i class="bi bi-info-circle fs-1 text-muted"></i>
+
+                <h5 class="mt-3">
+                    No Ongoing Exams
+                </h5>
+
+                <p class="text-muted">
+                    You currently have no active exams.
+                </p>
+
+                <a
+                    href="{% url 'teacher_dashboard' %}"
+                    class="btn btn-outline-secondary"
+                >
+                    Back to Dashboard
+                </a>
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

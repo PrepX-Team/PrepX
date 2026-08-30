@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %} - Create Exam{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+
+    <div class="col-lg-8">
+
+        <div class="card shadow-sm">
+
+            <div class="card-body p-4">
+
+                <h4 class="mb-1">
+                    Create Conducted Exam
+                </h4>
+
+                <p class="text-muted mb-4">
+                    Enter the basic details of your exam.
+                </p>
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Exam Name
+                        </label>
+
+                        {{ form.exam_name }}
+
+                        {% for error in form.exam_name.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+
+                    </div>
+
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Duration
+                        </label>
+
+                        <div class="input-group">
+
+                            {{ form.duration_minutes }}
+
+                            <span class="input-group-text">
+                                Minutes
+                            </span>
+
+                        </div>
+
+                        {% for error in form.duration_minutes.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+
+                    </div>
+
+
+                    <div class="form-check mb-3">
+
+                        {{ form.negative_marking_enabled }}
+
+                        <label
+                            class="form-check-label"
+                            for="{{ form.negative_marking_enabled.id_for_label }}"
+                        >
+                            Enable Negative Marking
+                        </label>
+
+                    </div>
+
+
+                    <div class="mb-4">
+
+                        <label class="form-label">
+                            Negative Marks
+                        </label>
+
+                        {{ form.negative_marks }}
+
+                        <div class="form-text">
+                            Marks deducted for every wrong answer.
+                        </div>
+
+                        {% for error in form.negative_marks.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+
+                    </div>
+
+
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+
+                            const negativeMarkingCheckbox =
+                                document.getElementById(
+                                    '{{ form.negative_marking_enabled.id_for_label }}'
+                                );
+
+                            const negativeMarksInput =
+                                document.getElementById(
+                                    '{{ form.negative_marks.id_for_label }}'
+                                );
+
+                            function toggleNegativeMarks() {
+
+                                negativeMarksInput.disabled =
+                                    !negativeMarkingCheckbox.checked;
+
+                                if (!negativeMarkingCheckbox.checked) {
+                                    negativeMarksInput.value = '';
+                                }
+                            }
+
+                            negativeMarkingCheckbox.addEventListener(
+                                'change',
+                                toggleNegativeMarks
+                            );
+
+                            toggleNegativeMarks();
+                        });
+                    </script>
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Continue
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

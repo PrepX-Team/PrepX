@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+
+{% block title %} - Waiting for Exam{% endblock %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-8">
+
+            <!-- EXAM WAITING CARD -->
+
+            <div class="card shadow-sm">
+
+                <div class="card-body p-4 p-md-5">
+
+                    <div class="text-center">
+
+                        <i class="bi bi-hourglass-split fs-1"></i>
+
+                        <h2 class="mt-3">
+                            {{ exam.exam_name }}
+                        </h2>
+
+                        <h5 class="mt-4">
+                            You have joined the exam successfully.
+                        </h5>
+
+                        <p class="text-muted mt-2">
+                            Please wait for the teacher to start the exam.
+                        </p>
+
+                    </div>
+
+
+                    <!-- EXAM KEY -->
+
+                    <div class="alert alert-info mt-4 text-center">
+
+                        <strong>
+                            Exam Key:
+                        </strong>
+
+                        <span class="fw-bold">
+                            {{ exam.exam_key }}
+                        </span>
+
+                    </div>
+
+
+                    <!-- WAITING STATUS -->
+
+                    <div
+                        class="text-center mt-4"
+                        id="waiting-section"
+                    >
+
+                        <span class="badge bg-warning text-dark fs-6">
+                            <i class="bi bi-clock"></i>
+                            Waiting for teacher
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- EXAM INSTRUCTIONS -->
+
+            <div class="card shadow-sm mt-4">
+
+                <div class="card-header">
+
+                    <strong>
+                        <i class="bi bi-shield-check"></i>
+                        Exam Instructions
+                    </strong>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="alert alert-warning mb-3">
+
+                        <strong>
+                            Important:
+                        </strong>
+
+                        Once the teacher starts the exam, the exam timer
+                        will begin.
+                    </div>
+
+
+                    <ul class="mb-0">
+
+                        <li class="mb-2">
+                            Keep your device connected to a stable power
+                            and internet connection.
+                        </li>
+
+                        <li class="mb-2">
+                            Do not switch to another browser tab or window
+                            during the exam.
+                        </li>
+
+                        <li class="mb-2">
+                            Do not use copy, paste or cut operations.
+                        </li>
+
+                        <li class="mb-2">
+                            Do not use unauthorized books, websites,
+                            mobile phones or other external assistance.
+                        </li>
+
+                        <li class="mb-2">
+                            Do not share your exam questions or answers
+                            with anyone.
+                        </li>
+
+                        <li class="mb-2">
+                            Keep the exam window open until you submit
+                            your exam.
+                        </li>
+
+                        <li class="mb-2">
+                            Security violations may be recorded and
+                            reported to the teacher.
+                        </li>
+
+                        <li>
+                            When the exam time expires, your exam may be
+                            submitted automatically.
+                        </li>
+
+                    </ul>
+
+                </div>
+
+            </div>
+
+
+            <!-- WHAT HAPPENS NEXT -->
+
+            <div class="card shadow-sm mt-4">
+
+                <div class="card-header">
+
+                    <strong>
+                        <i class="bi bi-info-circle"></i>
+                        What happens next?
+                    </strong>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="d-flex align-items-start mb-3">
+
+                        <div class="me-3">
+                            <span class="badge bg-primary rounded-pill">
+                                1
+                            </span>
+                        </div>
+
+                        <div>
+                            You are currently waiting for the teacher.
+                        </div>
+
+                    </div>
+
+
+                    <div class="d-flex align-items-start mb-3">
+
+                        <div class="me-3">
+                            <span class="badge bg-primary rounded-pill">
+                                2
+                            </span>
+                        </div>
+
+                        <div>
+                            The teacher will start the exam.
+                        </div>
+
+                    </div>
+
+
+                    <div class="d-flex align-items-start mb-3">
+
+                        <div class="me-3">
+                            <span class="badge bg-primary rounded-pill">
+                                3
+                            </span>
+                        </div>
+
+                        <div>
+                            You will automatically be taken to the
+                            examination page.
+                        </div>
+
+                    </div>
+
+
+                    <div class="d-flex align-items-start">
+
+                        <div class="me-3">
+
+                            <span class="badge bg-success rounded-pill">
+                                4
+                            </span>
+
+                        </div>
+
+                        <div>
+                            Answer the questions and submit your exam
+                            before the timer reaches zero.
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const statusUrl =
+    "{% url 'student_exam_waiting_status' exam.id %}";
+
+const takeExamUrl =
+    "{% url 'student_take_exam' exam.id %}";
+
+
+function checkExamStatus() {
+
+    fetch(statusUrl)
+
+        .then(response => {
+
+            if (!response.ok) {
+
+                throw new Error(
+                    'Server returned ' + response.status
+                );
+
+            }
+
+            return response.json();
+
+        })
+
+        .then(data => {
+
+            if (!data.success) {
+                return;
+            }
+
+
+            /* ==============================================
+               EXAM STARTED
+               ============================================== */
+
+            if (data.exam_status === 'ongoing') {
+
+                window.location.href = takeExamUrl;
+
+            }
+
+
+            /* ==============================================
+               EXAM COMPLETED
+               ============================================== */
+
+            else if (data.exam_status === 'completed') {
+
+                const waitingSection =
+                    document.getElementById(
+                        'waiting-section'
+                    );
+
+                if (waitingSection) {
+
+                    waitingSection.innerHTML = `
+
+                        <span class="badge bg-secondary fs-6">
+
+                            <i class="bi bi-check-circle"></i>
+
+                            Exam has ended
+
+                        </span>
+
+                    `;
+
+                }
+
+            }
+
+        })
+
+        .catch(error => {
+
+            console.error(
+                'Exam status check failed:',
+                error
+            );
+
+        });
+
+}
+
+
+/*
+ * Check immediately when page loads.
+ */
+
+checkExamStatus();
+
+
+/*
+ * Check every 2 seconds.
+ */
+
+setInterval(
+    checkExamStatus,
+    2000
+);
+
+</script>
+
+{% endblock %}
