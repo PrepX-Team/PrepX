@@ -65,61 +65,255 @@ def create_exam(request):
 @role_required('teacher')
 def select_exam_questions(request, exam_id):
 
+    # =========================================================
+    # GET EXAM
+    # =========================================================
+
     exam = get_object_or_404(
         ConductedExam,
         pk=exam_id,
         teacher=request.user,
     )
 
+
+    # =========================================================
+    # SESSION KEY
+    # =========================================================
+
+    selection_session_key = (
+        f'prepx_exam_{exam.id}_selected_questions'
+    )
+
+
+    # =========================================================
+    # LOAD TEMPORARY SELECTION
+    # =========================================================
+
+    selected_questions = request.session.get(
+        selection_session_key,
+        {}
+    )
+
+
+    # Make sure session data is a dictionary.
+
+    if not isinstance(
+        selected_questions,
+        dict
+    ):
+
+        selected_questions = {}
+
+
+    # =========================================================
+    # RESTORE DATABASE QUESTIONS
+    # =========================================================
+    #
+    # If this exam already has questions saved in DB and
+    # session does not have selection yet, restore them.
+    #
+    # =========================================================
+
+    if not selected_questions:
+
+        existing_questions = (
+            ConductedExamQuestion.objects.filter(
+                exam=exam
+            ).order_by(
+                'question_order'
+            )
+        )
+
+
+        for exam_question in existing_questions:
+
+            selected_questions[
+                str(
+                    exam_question.question_id
+                )
+            ] = str(
+                exam_question.marks
+            )
+
+
+        if selected_questions:
+
+            request.session[
+                selection_session_key
+            ] = selected_questions
+
+            request.session.modified = True
+
+
+    # =========================================================
+    # FILTER VALUES
+    # =========================================================
+
+    source = request.GET.get(
+        'source',
+        'all'
+    ).strip()
+
+
+    subject_id = request.GET.get(
+        'subject',
+        ''
+    ).strip()
+
+
+    topic_id = request.GET.get(
+        'topic',
+        ''
+    ).strip()
+
+
+    difficulty = request.GET.get(
+        'difficulty',
+        ''
+    ).strip()
+
+
+    search = request.GET.get(
+        'search',
+        ''
+    ).strip()
+
+
+    # =========================================================
+    # RESTORE SELECTION SENT BY FILTER FORM
+    # =========================================================
+    #
+    # When Apply Filters is clicked, the currently selected
+    # questions are sent through hidden GET fields.
+    #
+    # These are merged into the existing session selection.
+    #
+    # =========================================================
+
+    carried_question_ids = request.GET.getlist(
+        'selected_questions'
+    )
+
+
+    if carried_question_ids:
+
+        for question_id in carried_question_ids:
+
+            question_id = str(
+                question_id
+            )
+
+
+            marks_value = request.GET.get(
+                f'selected_marks_{question_id}',
+                '1'
+            ).strip()
+
+
+            if not marks_value:
+
+                marks_value = '1'
+
+
+            selected_questions[
+                question_id
+            ] = marks_value
+
+
+        request.session[
+            selection_session_key
+        ] = selected_questions
+
+        request.session.modified = True
+
+
+    # =========================================================
+    # QUESTIONS QUERY
+    # =========================================================
+
     questions = Question.objects.filter(
-        Q(is_global=True) | Q(created_by=request.user),
+        Q(is_global=True)
+        |
+        Q(created_by=request.user),
         is_active=True,
     ).select_related(
         'subject',
         'topic',
     )
 
-    # -------------------------
-    # Filters
-    # -------------------------
 
-    source = request.GET.get('source', 'all').strip()
-    subject_id = request.GET.get('subject', '').strip()
-    topic_id = request.GET.get('topic', '').strip()
-    difficulty = request.GET.get('difficulty', '').strip()
-    search = request.GET.get('search', '').strip()
+    # =========================================================
+    # SOURCE FILTER
+    # =========================================================
 
     if source == 'global':
+
         questions = questions.filter(
             is_global=True
         )
 
+
     elif source == 'own':
+
         questions = questions.filter(
             created_by=request.user,
             is_global=False,
         )
 
+
+    # =========================================================
+    # SUBJECT FILTER
+    # =========================================================
+
     if subject_id:
+
         questions = questions.filter(
             subject_id=subject_id
         )
 
+
+    # =========================================================
+    # TOPIC FILTER
+    # =========================================================
+
     if topic_id:
+
         questions = questions.filter(
             topic_id=topic_id
         )
 
+
+    # =========================================================
+    # DIFFICULTY FILTER
+    # =========================================================
+
     if difficulty:
+
         questions = questions.filter(
             difficulty_level=difficulty
         )
 
+
+    # =========================================================
+    # SEARCH FILTER
+    # =========================================================
+
     if search:
+
         questions = questions.filter(
-            Q(question_text__icontains=search)
-            | Q(explanation__icontains=search)
+            Q(
+                question_text__icontains=search
+            )
+            |
+            Q(
+                explanation__icontains=search
+            )
         )
+
+
+    # =========================================================
+    # ORDER QUESTIONS
+    # =========================================================
 
     questions = questions.order_by(
         'subject__name',
@@ -127,9 +321,45 @@ def select_exam_questions(request, exam_id):
         'id',
     )
 
+
+    # =========================================================
+    # MARK SELECTED QUESTIONS
+    # =========================================================
+
+    for question in questions:
+
+        question_id = str(
+            question.id
+        )
+
+
+        question.is_selected = (
+            question_id in selected_questions
+        )
+
+
+        question.selected_marks = (
+            selected_questions.get(
+                question_id,
+                '1'
+            )
+        )
+
+
+    # =========================================================
+    # SUBJECTS
+    # =========================================================
+
     subjects = Subject.objects.filter(
         is_active=True
-    ).order_by('name')
+    ).order_by(
+        'name'
+    )
+
+
+    # =========================================================
+    # TOPICS
+    # =========================================================
 
     topics = Topic.objects.filter(
         is_active=True
@@ -140,9 +370,20 @@ def select_exam_questions(request, exam_id):
         'name',
     )
 
-    # -------------------------
-    # Save selected questions
-    # -------------------------
+
+    # =========================================================
+    # DIFFICULTY LEVELS
+    # =========================================================
+
+    difficulty_levels = range(
+        1,
+        11
+    )
+
+
+    # =========================================================
+    # POST - CONTINUE
+    # =========================================================
 
     if request.method == 'POST':
 
@@ -150,55 +391,154 @@ def select_exam_questions(request, exam_id):
             'questions'
         )
 
-        if not selected_ids:
+
+        # =====================================================
+        # CURRENT FILTERED PAGE QUESTION IDS
+        # =====================================================
+
+        current_page_question_ids = {
+            str(question.id)
+            for question in questions
+        }
+
+
+        # =====================================================
+        # REMOVE ONLY UNCHECKED QUESTIONS FROM
+        # CURRENT FILTERED PAGE
+        # =====================================================
+
+        for question_id in current_page_question_ids:
+
+            if question_id not in selected_ids:
+
+                selected_questions.pop(
+                    question_id,
+                    None
+                )
+
+
+        # =====================================================
+        # ADD / UPDATE CURRENT PAGE SELECTION
+        # =====================================================
+
+        for question_id in selected_ids:
+
+            question_id = str(
+                question_id
+            )
+
+
+            marks_value = request.POST.get(
+                f'marks_{question_id}',
+                '1'
+            ).strip()
+
+
+            if not marks_value:
+
+                marks_value = '1'
+
+
+            selected_questions[
+                question_id
+            ] = marks_value
+
+
+        # =====================================================
+        # SAVE SESSION
+        # =====================================================
+
+        request.session[
+            selection_session_key
+        ] = selected_questions
+
+        request.session.modified = True
+
+
+        # =====================================================
+        # CHECK SELECTION
+        # =====================================================
+
+        if not selected_questions:
+
             messages.error(
                 request,
                 'Please select at least one question.'
             )
 
+
         else:
 
-            # Only allow questions that this teacher
-            # is actually allowed to use.
-            allowed_questions = Question.objects.filter(
-                Q(is_global=True) | Q(created_by=request.user),
-                is_active=True,
-                id__in=selected_ids,
+            final_selected_ids = list(
+                selected_questions.keys()
             )
+
+
+            # =================================================
+            # VALIDATE QUESTION ACCESS
+            # =================================================
+
+            allowed_questions = Question.objects.filter(
+                Q(is_global=True)
+                |
+                Q(created_by=request.user),
+                is_active=True,
+                id__in=final_selected_ids,
+            )
+
 
             allowed_map = {
                 str(question.id): question
                 for question in allowed_questions
             }
 
-            if len(allowed_map) != len(set(selected_ids)):
+
+            if (
+                len(allowed_map)
+                != len(final_selected_ids)
+            ):
+
                 messages.error(
                     request,
                     'One or more selected questions are not available to you.'
                 )
 
+
             else:
 
-                selected_questions = []
+                selected_exam_questions = []
+
+
+                # =============================================
+                # VALIDATE MARKS
+                # =============================================
 
                 try:
 
                     for order, question_id in enumerate(
-                        selected_ids,
+                        final_selected_ids,
                         start=1
                     ):
 
-                        marks_value = request.POST.get(
-                            f'marks_{question_id}',
-                            ''
-                        ).strip()
+                        marks_value = (
+                            selected_questions.get(
+                                question_id,
+                                '1'
+                            )
+                        )
 
-                        marks = Decimal(marks_value)
+
+                        marks = Decimal(
+                            marks_value
+                        )
+
 
                         if marks <= 0:
+
                             raise ValueError
 
-                        selected_questions.append(
+
+                        selected_exam_questions.append(
                             ConductedExamQuestion(
                                 exam=exam,
                                 question=allowed_map[
@@ -208,6 +548,7 @@ def select_exam_questions(request, exam_id):
                                 question_order=order,
                             )
                         )
+
 
                 except (
                     InvalidOperation,
@@ -220,7 +561,12 @@ def select_exam_questions(request, exam_id):
                         'Every selected question must have marks greater than 0.'
                     )
 
+
                 else:
+
+                    # =========================================
+                    # SAVE TO DATABASE
+                    # =========================================
 
                     with transaction.atomic():
 
@@ -228,33 +574,79 @@ def select_exam_questions(request, exam_id):
                             exam=exam
                         ).delete()
 
+
                         ConductedExamQuestion.objects.bulk_create(
-                            selected_questions
+                            selected_exam_questions
                         )
+
+
+                    # =================================================
+                    # KEEP SESSION
+                    # =================================================
+                    #
+                    # Required so Review -> Back can restore
+                    # selected questions.
+                    #
+                    # =================================================
 
                     messages.success(
                         request,
                         'Questions saved successfully.'
                     )
 
+
                     return redirect(
                         'teacher_review_exam',
                         exam_id=exam.id,
                     )
+
+
+    # =========================================================
+    # FINAL SELECTED IDS
+    # =========================================================
+
+    selected_question_ids = list(
+        selected_questions.keys()
+    )
+
+
+    # =========================================================
+    # RENDER TEMPLATE
+    # =========================================================
 
     return render(
         request,
         'teachers/select_exam_questions.html',
         {
             'exam': exam,
+
             'questions': questions,
+
             'subjects': subjects,
+
             'topics': topics,
+
+            'difficulty_levels': difficulty_levels,
+
             'source': source,
+
             'selected_subject': subject_id,
+
             'selected_topic': topic_id,
+
             'selected_difficulty': difficulty,
+
             'search': search,
+
+            'selected_questions': selected_questions,
+
+            'selected_question_ids': (
+                selected_question_ids
+            ),
+
+            'selected_question_count': (
+                len(selected_question_ids)
+            ),
         }
     )
 
