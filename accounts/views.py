@@ -10,12 +10,14 @@ from django.contrib.auth.views import (
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.urls import reverse_lazy
+from django.db.models import Avg, Count
 
 from .forms import StudentRegisterForm, TeacherRegisterForm, ProfileEditForm
 from .decorators import role_required
 from .models import User
 from subjects.models import Subject, Topic
 from questions.models import Question
+from exams.models import ExamAttempt
 
 
 # ---------- Registration ----------
@@ -120,10 +122,32 @@ def role_redirect(request):
 
 @role_required('student')
 def student_dashboard(request):
+    submitted_attempts = ExamAttempt.objects.filter(
+        student=request.user,
+        status='submitted',
+    )
+
+    tests_attempted = submitted_attempts.count()
+
+    average_score = submitted_attempts.filter(
+        score__isnull=False
+    ).aggregate(
+        average=Avg('score')
+    )['average'] or 0
+
+    topics_started = ExamAttempt.objects.filter(
+        student=request.user,
+        topic__isnull=False,
+    ).values(
+        'topic'
+    ).distinct().count()
+
     context = {
-        'tests_attempted': 0, # zeros will be replaced by actual database queries, calculating the student's real-time progress
-        'average_score': 0,   # in analytics module
-        'topics_started': 0,
+        'tests_attempted': tests_attempted,
+        'average_score': round(average_score, 2),
+        'topics_started': topics_started,
+
+        # Certificates module has not been implemented yet.
         'certificates_earned': 0,
     }
 
