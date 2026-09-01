@@ -11,7 +11,7 @@ from questions.models import Question
 
 subject = Subject.objects.get(name="QA")
 topic = Topic.objects.get(subject=subject, name="Average")
-admin = User.objects.get(username="manavadmin")
+admin = User.objects.get(username="admin")
 
 
 questions = [
