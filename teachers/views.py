@@ -1245,7 +1245,6 @@ def previous_exam_pdf(request, exam_id):
         'student'
     ).order_by('joined_at')
 
-
     # ---------------------------------------------------------
     # RESPONSE
     # ---------------------------------------------------------
@@ -1254,13 +1253,10 @@ def previous_exam_pdf(request, exam_id):
         content_type='application/pdf'
     )
 
-    response[
-        'Content-Disposition'
-    ] = (
+    response['Content-Disposition'] = (
         f'attachment; '
         f'filename="exam_{exam.id}_report.pdf"'
     )
-
 
     # ---------------------------------------------------------
     # PDF DOCUMENT
@@ -1275,21 +1271,16 @@ def previous_exam_pdf(request, exam_id):
         bottomMargin=30,
     )
 
-
     styles = getSampleStyleSheet()
-
 
     # ---------------------------------------------------------
     # TITLE
     # ---------------------------------------------------------
 
     title_style = styles['Title']
-
     title_style.alignment = TA_CENTER
 
-
     elements = []
-
 
     elements.append(
         Paragraph(
@@ -1298,14 +1289,9 @@ def previous_exam_pdf(request, exam_id):
         )
     )
 
-
     elements.append(
-        Spacer(
-            1,
-            15
-        )
+        Spacer(1, 15)
     )
-
 
     # ---------------------------------------------------------
     # EXAM DETAILS
@@ -1314,19 +1300,6 @@ def previous_exam_pdf(request, exam_id):
     exam_details = [
 
         ['Exam Name', exam.exam_name],
-
-        ['Exam Key', exam.exam_key or '-'],
-
-        [
-            'Started At',
-            (
-                exam.started_at.strftime(
-                    '%d %b %Y, %I:%M %p'
-                )
-                if exam.started_at
-                else '-'
-            )
-        ],
 
         [
             'Duration',
@@ -1345,12 +1318,10 @@ def previous_exam_pdf(request, exam_id):
 
     ]
 
-
     exam_table = Table(
         exam_details,
         colWidths=[120, 300]
     )
-
 
     exam_table.setStyle(
         TableStyle([
@@ -1401,19 +1372,13 @@ def previous_exam_pdf(request, exam_id):
         ])
     )
 
-
     elements.append(
         exam_table
     )
 
-
     elements.append(
-        Spacer(
-            1,
-            20
-        )
+        Spacer(1, 20)
     )
-
 
     # ---------------------------------------------------------
     # STUDENT RESULTS
@@ -1433,7 +1398,6 @@ def previous_exam_pdf(request, exam_id):
 
     ]
 
-
     for index, participant in enumerate(
         participants,
         start=1
@@ -1444,7 +1408,6 @@ def previous_exam_pdf(request, exam_id):
             or participant.student.username
         )
 
-
         joined_at = (
             participant.joined_at.strftime(
                 '%d %b %Y, %I:%M %p'
@@ -1452,7 +1415,6 @@ def previous_exam_pdf(request, exam_id):
             if participant.joined_at
             else '-'
         )
-
 
         submitted_at = (
             participant.submitted_at.strftime(
@@ -1462,17 +1424,14 @@ def previous_exam_pdf(request, exam_id):
             else '-'
         )
 
-
         status = (
             participant.get_status_display()
         )
-
 
         score = (
             f'{participant.score} / '
             f'{participant.total_marks}'
         )
-
 
         table_data.append([
 
@@ -1494,7 +1453,6 @@ def previous_exam_pdf(request, exam_id):
 
         ])
 
-
     student_table = Table(
         table_data,
         repeatRows=1,
@@ -1508,7 +1466,6 @@ def previous_exam_pdf(request, exam_id):
             70,
         ]
     )
-
 
     student_table.setStyle(
         TableStyle([
@@ -1566,11 +1523,9 @@ def previous_exam_pdf(request, exam_id):
         ])
     )
 
-
     elements.append(
         student_table
     )
-
 
     # ---------------------------------------------------------
     # BUILD PDF
@@ -1579,7 +1534,6 @@ def previous_exam_pdf(request, exam_id):
     document.build(
         elements
     )
-
 
     return response
 
