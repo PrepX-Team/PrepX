@@ -11,12 +11,22 @@ from subjects.models import Subject
 @role_required('admin', 'teacher')
 def add_question(request):
     form = QuestionForm(request.POST or None)
+
     if request.method == 'POST' and form.is_valid():
         question = form.save(commit=False)
+
         question.created_by = request.user
-        question.is_global = (request.user.role == 'admin')
-        question.status = 'approved' if request.user.role == 'admin' else 'pending'
+
+        if request.user.role == 'admin':
+            question.is_global = True
+            question.status = 'approved'
+
+        elif request.user.role == 'teacher':
+            question.is_global = False
+            question.status = 'approved'
+
         question.save()
+
         return redirect('question_list')
 
     return render(request, 'questions/add_question.html', {'form': form})
