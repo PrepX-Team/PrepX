@@ -32,16 +32,17 @@ def add_question(request):
     return render(request, 'questions/add_question.html', {'form': form})
 
 
-@role_required('admin', 'teacher', 'student')
+@role_required('admin', 'teacher')
 def question_list(request):
     user = request.user
 
     if user.role == 'admin':
         qs = Question.objects.filter(is_active=True)
-    elif user.role == 'teacher':
-        qs = Question.objects.filter(Q(is_global=True) | Q(created_by=user), is_active=True)
     else:
-        qs = Question.objects.filter(is_global=True, status='approved', is_active=True)
+        qs = Question.objects.filter(
+            Q(is_global=True) | Q(created_by=user),
+            is_active=True
+        )
 
     qs = qs.select_related('subject', 'topic', 'created_by')
 
@@ -51,18 +52,23 @@ def question_list(request):
     difficulty = request.GET.get('difficulty', '').strip()
 
     if search:
-        qs = qs.filter(Q(question_text__icontains=search) | Q(explanation__icontains=search))
+        qs = qs.filter(
+            Q(question_text__icontains=search) |
+            Q(explanation__icontains=search)
+        )
+
     if subject_id:
         qs = qs.filter(subject_id=subject_id)
+
     if topic_id:
         qs = qs.filter(topic_id=topic_id)
+
     if difficulty:
         qs = qs.filter(difficulty_level=difficulty)
 
     paginator = Paginator(qs, 10)
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    from subjects.models import Subject
     context = {
         'page_obj': page_obj,
         'subjects': Subject.objects.filter(is_active=True),
@@ -72,6 +78,7 @@ def question_list(request):
         'selected_topic': topic_id,
         'selected_difficulty': difficulty,
     }
+
     return render(request, 'questions/list.html', context)
 
 
