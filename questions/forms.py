@@ -28,14 +28,21 @@ class QuestionForm(forms.ModelForm):
                     ('D', 'D'),
                 ]
             ),
+            'difficulty_level': forms.NumberInput(
+                attrs={
+                    'min': 1,
+                    'max': 10,
+                    'step': 1,
+                }
+            ),
         }
 
     def clean_difficulty_level(self):
         level = self.cleaned_data['difficulty_level']
 
-        if not (1 <= level <= 10):
+        if level < 1 or level > 10:
             raise forms.ValidationError(
-                "Difficulty must be between 1 and 10."
+                'Difficulty level must be between 1 and 10.'
             )
 
         return level
