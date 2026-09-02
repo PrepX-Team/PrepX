@@ -27,6 +27,7 @@ urlpatterns = [
     path('teachers/', include('teachers.urls')),
     path('students/', include('students.urls')),
     path('results/', include('results.urls')),
+    path('analytics/', include('analytics.urls')),
 ]
 
 handler403 = 'accounts.views.custom_403'
