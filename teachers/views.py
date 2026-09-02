@@ -1120,6 +1120,12 @@ def end_exam(request, exam_id):
             ]
         )
 
+        from results.services import get_or_create_conducted_result
+
+        get_or_create_conducted_result(
+            participant
+        )
+
     # ---------------------------------------------------------
     # COMPLETE EXAM
     # ---------------------------------------------------------

@@ -59,7 +59,8 @@ def submit_practice_attempt(attempt):
     ExamAnswer and Question records.
 
     The operation is idempotent: submitting an already-submitted
-    attempt returns the existing finalized attempt.
+    attempt returns the existing finalized attempt and ensures
+    its Result exists.
     """
     with transaction.atomic():
 
@@ -82,6 +83,12 @@ def submit_practice_attempt(attempt):
 
         # Idempotent submission.
         if locked.status == 'submitted':
+            from results.services import get_or_create_practice_result
+
+            get_or_create_practice_result(
+                locked
+            )
+
             return locked
 
         # Only an in-progress attempt can be finalized.
@@ -116,6 +123,12 @@ def submit_practice_attempt(attempt):
         )
 
         update_student_progress_after_attempt(
+            locked
+        )
+
+        from results.services import get_or_create_practice_result
+
+        get_or_create_practice_result(
             locked
         )
 

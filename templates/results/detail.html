@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">{{ title }}</h1>
+
+            <p class="text-muted mb-0">
+                Completed {{ result.finalized_at|date:"d M Y, h:i A" }}
+            </p>
+        </div>
+
+        <a href="{% url 'result_list' %}" class="btn btn-outline-secondary">
+            Back to Results
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-muted">Score</div>
+                    <div class="fs-3 fw-bold">
+                        {{ result.score }}/{{ result.total_marks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-muted">Accuracy</div>
+                    <div class="fs-3 fw-bold">
+                        {{ result.accuracy|floatformat:2 }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-muted">Time Taken</div>
+                    <div class="fs-3 fw-bold">
+                        {% if time_taken %}
+                            {{ time_taken }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <h2 class="h4 mb-3">Question Review</h2>
+
+    {% for answer in answers %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+
+                <div class="d-flex justify-content-between mb-2">
+                    <strong>Question {{ answer.order }}</strong>
+
+                    <span>
+                        {% if answer.status == 'correct' %}
+                            <span class="badge bg-success">Correct</span>
+                        {% elif answer.status == 'incorrect' %}
+                            <span class="badge bg-danger">Incorrect</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Unanswered</span>
+                        {% endif %}
+                    </span>
+                </div>
+
+                <p class="mb-3">
+                    {{ answer.text }}
+                </p>
+
+                <p class="mb-1">
+                    <strong>Your answer:</strong>
+                    {% if answer.selected %}
+                        {{ answer.selected }}
+                    {% else %}
+                        Not answered
+                    {% endif %}
+                </p>
+
+                <p class="mb-1">
+                    <strong>Correct answer:</strong>
+                    {{ answer.correct }}
+                </p>
+
+                {% if answer.explanation %}
+                    <div class="mt-3 p-3 bg-light rounded">
+                        <strong>Explanation:</strong>
+                        <div class="mt-1">
+                            {{ answer.explanation }}
+                        </div>
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    {% empty %}
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                No answer details are available for this result.
+            </div>
+        </div>
+    {% endfor %}
+
+</div>
+{% endblock %}

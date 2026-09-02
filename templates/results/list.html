@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">My Results</h1>
+            <p class="text-muted mb-0">
+                Review your completed practice tests and conducted exams.
+            </p>
+        </div>
+    </div>
+
+    {% if page_obj.object_list %}
+        <div class="row g-3">
+
+            {% for result in page_obj %}
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+
+                            <div class="d-flex justify-content-between align-items-start">
+
+                                <div>
+                                    <h5 class="card-title mb-1">
+                                        {% if result.result_type == 'practice' %}
+                                            {{ result.practice_attempt.topic.subject.name }}
+                                            —
+                                            {{ result.practice_attempt.topic.name }}
+                                        {% else %}
+                                            {{ result.conducted_participant.exam.exam_name }}
+                                        {% endif %}
+                                    </h5>
+
+                                    <p class="text-muted mb-2">
+                                        {% if result.result_type == 'practice' %}
+                                            Practice Test {{ result.practice_attempt.test_number }}
+                                        {% else %}
+                                            Conducted Exam
+                                        {% endif %}
+                                    </p>
+
+                                    <small class="text-muted">
+                                        Completed:
+                                        {{ result.finalized_at|date:"d M Y, h:i A" }}
+                                    </small>
+                                </div>
+
+                                <div class="text-end">
+                                    <div class="fw-bold fs-5">
+                                        {{ result.score }}/{{ result.total_marks }}
+                                    </div>
+
+                                    <div class="text-muted">
+                                        {{ result.accuracy|floatformat:2 }}%
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="mt-3">
+                                <a
+                                    href="{% url 'result_detail' result.id %}"
+                                    class="btn btn-primary btn-sm"
+                                >
+                                    View Result
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+        </div>
+
+        {% if page_obj.has_other_pages %}
+            <nav class="mt-4" aria-label="Results pagination">
+
+                <ul class="pagination justify-content-center">
+
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a
+                                class="page-link"
+                                href="?page={{ page_obj.previous_page_number }}"
+                            >
+                                Previous
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            {{ page_obj.number }}
+                        </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a
+                                class="page-link"
+                                href="?page={{ page_obj.next_page_number }}"
+                            >
+                                Next
+                            </a>
+                        </li>
+                    {% endif %}
+
+                </ul>
+
+            </nav>
+        {% endif %}
+
+    {% else %}
+
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <h5>No results yet</h5>
+                <p class="text-muted mb-0">
+                    Complete a practice test or conducted exam to see your results here.
+                </p>
+            </div>
+        </div>
+
+    {% endif %}
+
+</div>
+{% endblock %}
