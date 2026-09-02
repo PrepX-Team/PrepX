@@ -1,10 +1,12 @@
-from django.test import TestCase
+from django.test import TestCase, Client
+from django.urls import reverse
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from accounts.models import User
 from subjects.models import Subject, Topic
 from exams.models import ExamAttempt
+from exams.services.submission import submit_practice_attempt
 
 from teachers.models import (
     ConductedExam,
@@ -379,3 +381,263 @@ class ResultServiceConductedTests(TestCase):
                 student=self.student,
                 finalized_at=timezone.now(),
             )
+
+class ResultViewTests(TestCase):
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username='result_view_admin',
+            email='result_view_admin@example.com',
+            password='pass12345',
+            role='admin',
+        )
+
+        self.student = User.objects.create_user(
+            username='result_view_student',
+            email='result_view_student@example.com',
+            password='pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        self.other_student = User.objects.create_user(
+            username='result_view_other',
+            email='result_view_other@example.com',
+            password='pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        self.subject = Subject.objects.create(
+            name='Result View Subject'
+        )
+
+        self.topic = Topic.objects.create(
+            subject=self.subject,
+            name='Result View Topic',
+        )
+
+        # Create the questions required for a practice test.
+        for i in range(20):
+            from questions.models import Question
+
+            Question.objects.create(
+                subject=self.subject,
+                topic=self.topic,
+                question_text=f'Result View Question {i}',
+                option_a='A',
+                option_b='B',
+                option_c='C',
+                option_d='D',
+                correct_option='A',
+                explanation='Test explanation.',
+                difficulty_level=1,
+                created_by=self.admin,
+                is_global=True,
+                status='approved',
+            )
+
+        self.client = Client()
+
+    def _create_submitted_result(self):
+        self.client.force_login(self.student)
+
+        response = self.client.post(
+            reverse(
+                'practice_start',
+                args=[self.topic.id, 1],
+            )
+        )
+
+        self.assertIn(
+            response.status_code,
+            [200, 302],
+        )
+
+        attempt = ExamAttempt.objects.get(
+            student=self.student,
+            topic=self.topic,
+            test_number=1,
+        )
+
+        submit_practice_attempt(attempt)
+
+        return Result.objects.get(
+            practice_attempt=attempt
+        )
+
+    def test_owner_can_view_result_detail(self):
+        result = self._create_submitted_result()
+
+        response = self.client.get(
+            reverse(
+                'result_detail',
+                args=[result.id],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            'Correct answer'
+        )
+
+    def test_other_student_cannot_view_result(self):
+        result = self._create_submitted_result()
+
+        self.client.force_login(
+            self.other_student
+        )
+
+        response = self.client.get(
+            reverse(
+                'result_detail',
+                args=[result.id],
+            )
+        )
+
+        # Ownership is enforced by the queryset.
+        # An inaccessible result is intentionally returned as 404.
+        self.assertEqual(
+            response.status_code,
+            404,
+        )
+
+    def test_result_appears_in_result_list(self):
+        result = self._create_submitted_result()
+
+        response = self.client.get(
+            reverse('result_list')
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            'Practice Test 1'
+        )
+
+        self.assertContains(
+            response,
+            'View Result'
+        )
+
+    def test_other_student_does_not_see_result_in_list(self):
+        self._create_submitted_result()
+
+        self.client.force_login(
+            self.other_student
+        )
+
+        response = self.client.get(
+            reverse('result_list')
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            'No results yet'
+        )
+
+    def test_empty_result_list(self):
+        self.client.force_login(
+            self.student
+        )
+
+        response = self.client.get(
+            reverse('result_list')
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            'No results yet'
+        )
+
+    def test_question_wise_result_shows_correct_incorrect_unanswered(self):
+        self.client.force_login(self.student)
+
+        self.client.post(
+            reverse(
+                'practice_start',
+                args=[self.topic.id, 1],
+            )
+        )
+
+        attempt = ExamAttempt.objects.get(
+            student=self.student,
+            topic=self.topic,
+            test_number=1,
+        )
+
+        answers = list(
+            attempt.answers
+            .select_related('question')
+            .order_by('question_order')
+        )
+
+        # Question 1: correct
+        answers[0].selected_option = (
+            answers[0].question.correct_option
+        )
+        answers[0].save()
+
+        # Question 2: incorrect
+        wrong_option = next(
+            option
+            for option in 'ABCD'
+            if option != answers[1].question.correct_option
+        )
+
+        answers[1].selected_option = wrong_option
+        answers[1].save()
+
+        # Question 3 remains unanswered.
+
+        submit_practice_attempt(attempt)
+
+        result = Result.objects.get(
+            practice_attempt=attempt
+        )
+
+        response = self.client.get(
+            reverse(
+                'result_detail',
+                args=[result.id],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            'Correct'
+        )
+
+        self.assertContains(
+            response,
+            'Incorrect'
+        )
+
+        self.assertContains(
+            response,
+            'Unanswered'
+        )
