@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+
+    <div class="mb-4">
+        <h1 class="h3 mb-1">My Analytics</h1>
+        <p class="text-muted mb-0">
+            Track your practice performance and progress.
+        </p>
+    </div>
+
+    {% if not overview.has_data %}
+
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <h5>No analytics data yet</h5>
+                <p class="text-secondary mb-0">
+                    Complete more practice tests to see your analytics.
+                </p>
+            </div>
+        </div>
+
+    {% else %}
+
+        <div class="row g-3 mb-4">
+
+            <div class="col-md-3">
+                <div class="card p-3 text-center h-100">
+                    <h3>{{ overview.completed_tests }}</h3>
+                    <small class="text-muted">Completed Tests</small>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card p-3 text-center h-100">
+                    <h3>{{ overview.average_score }}</h3>
+                    <small class="text-muted">Average Score</small>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card p-3 text-center h-100">
+                    <h3>{{ overview.overall_accuracy }}%</h3>
+                    <small class="text-muted">Overall Accuracy</small>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card p-3 text-center h-100">
+                    <h3>
+                        {{ trend.status|default:"—"|title }}
+                    </h3>
+                    <small class="text-muted">Trend</small>
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+
+                <h5 class="card-title">Topic Performance</h5>
+
+                {% for topic in topics %}
+
+                    <div class="d-flex justify-content-between
+                                align-items-center border-bottom py-2">
+
+                        <div>
+                            <strong>{{ topic.topic }}</strong>
+
+                            <div class="small text-muted">
+                                {{ topic.attempts }} attempt{{ topic.attempts|pluralize }}
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <strong>{{ topic.accuracy }}%</strong>
+
+                            {% if not topic.sufficient_data %}
+                                <div class="small text-secondary">
+                                    Not enough data yet
+                                </div>
+                            {% endif %}
+                        </div>
+
+                    </div>
+
+                {% empty %}
+
+                    <p class="text-secondary mb-0">
+                        No topic data yet.
+                    </p>
+
+                {% endfor %}
+
+            </div>
+        </div>
+
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+
+                <h5 class="card-title">Difficulty Performance</h5>
+
+                {% for item in difficulty %}
+
+                    <div class="d-flex justify-content-between
+                                border-bottom py-2">
+
+                        <span>
+                            Difficulty Level {{ item.difficulty }}
+                        </span>
+
+                        <span>
+                            <strong>{{ item.accuracy }}%</strong>
+                            <small class="text-muted">
+                                ({{ item.attempts }} attempts)
+                            </small>
+                        </span>
+
+                    </div>
+
+                {% empty %}
+
+                    <p class="text-secondary mb-0">
+                        No difficulty data yet.
+                    </p>
+
+                {% endfor %}
+
+            </div>
+        </div>
+
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+
+                <h5 class="card-title">Time Analytics</h5>
+
+                {% if time.has_data %}
+
+                    <p class="mb-1">
+                        Average time per test:
+                        <strong>
+                            {{ time.average_time_seconds }} seconds
+                        </strong>
+                    </p>
+
+                    <p class="text-muted mb-0">
+                        Based on {{ time.total_tests }} completed tests.
+                    </p>
+
+                {% else %}
+
+                    <p class="text-secondary mb-0">
+                        No time data yet.
+                    </p>
+
+                {% endif %}
+
+            </div>
+        </div>
+
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+
+                <h5 class="card-title">Weak Topics</h5>
+
+                {% for topic in weak_strong.weak %}
+
+                    <span class="badge bg-danger me-1 mb-1">
+                        {{ topic.topic }} — {{ topic.accuracy }}%
+                    </span>
+
+                {% empty %}
+
+                    <p class="text-secondary mb-0">
+                        No weak topics identified yet.
+                    </p>
+
+                {% endfor %}
+
+            </div>
+        </div>
+
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+
+                <h5 class="card-title">Strong Topics</h5>
+
+                {% for topic in weak_strong.strong %}
+
+                    <span class="badge bg-success me-1 mb-1">
+                        {{ topic.topic }} — {{ topic.accuracy }}%
+                    </span>
+
+                {% empty %}
+
+                    <p class="text-secondary mb-0">
+                        No strong topics identified yet.
+                    </p>
+
+                {% endfor %}
+
+            </div>
+        </div>
+
+
+        {% if trend.status != 'insufficient_data' %}
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+
+                    <h5 class="card-title">Performance Trend</h5>
+
+                    <p class="mb-1">
+                        Current trend:
+                        <strong>{{ trend.status|title }}</strong>
+                    </p>
+
+                    <p class="mb-0 text-muted">
+                        Recent average:
+                        {{ trend.recent_avg }}%
+                        ·
+                        Previous average:
+                        {{ trend.previous_avg }}%
+                    </p>
+
+                </div>
+            </div>
+
+        {% endif %}
+
+    {% endif %}
+
+</div>
+{% endblock %}
