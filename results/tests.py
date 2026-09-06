@@ -18,6 +18,8 @@ from .models import Result
 from .services import (
     get_or_create_practice_result,
     get_or_create_conducted_result,
+    get_conducted_exam_leaderboard,
+    get_conducted_exam_summary,
 )
 
 
@@ -381,6 +383,181 @@ class ResultServiceConductedTests(TestCase):
                 student=self.student,
                 finalized_at=timezone.now(),
             )
+
+
+class LeaderboardServiceTests(TestCase):
+
+    def setUp(self):
+        self.teacher = User.objects.create_user(
+            username='leaderboard_teacher',
+            email='leaderboard_teacher@example.com',
+            password='pass12345',
+            role='teacher',
+            is_approved=True,
+        )
+
+        self.exam = ConductedExam.objects.create(
+            teacher=self.teacher,
+            exam_name='Leaderboard Exam',
+            duration_minutes=30,
+            status='completed',
+        )
+
+    def create_participant(
+        self,
+        username,
+        score,
+        minutes,
+        status='submitted',
+    ):
+        student = User.objects.create_user(
+            username=username,
+            email=f'{username}@example.com',
+            password='pass12345',
+            role='student',
+            is_approved=True,
+        )
+
+        start = timezone.now()
+
+        return ConductedExamParticipant.objects.create(
+            exam=self.exam,
+            student=student,
+            status=status,
+            score=score,
+            total_marks=20,
+            started_at=start,
+            submitted_at=start + timezone.timedelta(
+                minutes=minutes
+            ),
+        )
+
+    def test_higher_score_gets_higher_rank(self):
+        self.create_participant(
+            'student_one',
+            score=15,
+            minutes=10,
+        )
+        self.create_participant(
+            'student_two',
+            score=18,
+            minutes=15,
+        )
+
+        leaderboard = get_conducted_exam_leaderboard(
+            self.exam
+        )
+
+        self.assertEqual(
+            leaderboard[0]['participant'].score,
+            18,
+        )
+
+    def test_lower_time_breaks_score_tie(self):
+        self.create_participant(
+            'student_fast',
+            score=18,
+            minutes=10,
+        )
+        self.create_participant(
+            'student_slow',
+            score=18,
+            minutes=15,
+        )
+
+        leaderboard = get_conducted_exam_leaderboard(
+            self.exam
+        )
+
+        self.assertEqual(
+            leaderboard[0]['participant']
+            .student.username,
+            'student_fast',
+        )
+
+    def test_unfinished_participant_is_excluded(self):
+        self.create_participant(
+            'student_done',
+            score=15,
+            minutes=10,
+        )
+
+        self.create_participant(
+            'student_ongoing',
+            score=20,
+            minutes=5,
+            status='ongoing',
+        )
+
+        leaderboard = get_conducted_exam_leaderboard(
+            self.exam
+        )
+
+        self.assertEqual(len(leaderboard), 1)
+        self.assertEqual(
+            leaderboard[0]['participant']
+            .student.username,
+            'student_done',
+        )
+
+    def test_summary_calculates_scores(self):
+        self.create_participant(
+            'summary_student_one',
+            score=10,
+            minutes=10,
+        )
+
+        self.create_participant(
+            'summary_student_two',
+            score=18,
+            minutes=12,
+        )
+
+        leaderboard = get_conducted_exam_leaderboard(
+            self.exam
+        )
+
+        summary = get_conducted_exam_summary(
+            leaderboard
+        )
+
+        self.assertEqual(
+            summary['students'],
+            2,
+        )
+        self.assertEqual(
+            summary['average_score'],
+            14,
+        )
+        self.assertEqual(
+            summary['highest_score'],
+            18,
+        )
+        self.assertEqual(
+            summary['lowest_score'],
+            10,
+        )
+
+    def test_summary_handles_empty_leaderboard(self):
+        summary = get_conducted_exam_summary([])
+
+        self.assertEqual(
+            summary['students'],
+            0,
+        )
+        self.assertEqual(
+            summary['average_score'],
+            0,
+        )
+        self.assertEqual(
+            summary['highest_score'],
+            0,
+        )
+        self.assertEqual(
+            summary['lowest_score'],
+            0,
+        )
+
 
 class ResultViewTests(TestCase):
 

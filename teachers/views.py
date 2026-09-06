@@ -1,4 +1,8 @@
 from decimal import Decimal, InvalidOperation
+from results.services import (
+    get_conducted_exam_leaderboard,
+    get_conducted_exam_summary,
+)
 import secrets
 import os
 from django.contrib import messages
@@ -872,6 +876,8 @@ def previous_exam_monitor(request, exam_id):
     ).prefetch_related(
         'security_logs'
     ).order_by('joined_at')
+    leaderboard = get_conducted_exam_leaderboard(exam)
+    summary = get_conducted_exam_summary(leaderboard)
 
     return render(
         request,
@@ -879,6 +885,8 @@ def previous_exam_monitor(request, exam_id):
         {
             'exam': exam,
             'participants': participants,
+            'leaderboard': leaderboard,
+            'summary': summary,
         }
     )
 

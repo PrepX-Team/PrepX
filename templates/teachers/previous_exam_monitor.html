@@ -195,6 +195,96 @@
     </div>
 
 
+    <!-- RESULT SUMMARY -->
+
+    <div class="row g-3 mt-3">
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Submitted Students
+                    </div>
+
+                    <div class="fs-4 fw-bold">
+                        {{ summary.students }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Average Score
+                    </div>
+
+                    <div class="fs-4 fw-bold">
+                        {{ summary.average_score }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Highest Score
+                    </div>
+
+                    <div class="fs-4 fw-bold">
+                        {{ summary.highest_score }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Lowest Score
+                    </div>
+
+                    <div class="fs-4 fw-bold">
+                        {{ summary.lowest_score }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
     <!-- STUDENTS -->
 
     <div class="card shadow-sm mt-4">
@@ -210,7 +300,7 @@
 
         <div class="card-body">
 
-            {% if participants %}
+            {% if leaderboard %}
 
                 <div class="table-responsive">
 
@@ -220,7 +310,7 @@
 
                             <tr>
 
-                                <th>#</th>
+                                <th>Rank</th>
 
                                 <th>Student</th>
 
@@ -232,6 +322,8 @@
 
                                 <th>Score</th>
 
+                                <th>Time Taken</th>
+
                                 <th>Violations</th>
 
                             </tr>
@@ -241,27 +333,27 @@
 
                         <tbody>
 
-                            {% for participant in participants %}
+                            {% for item in leaderboard %}
 
                                 <tr>
 
                                     <td>
-                                        {{ forloop.counter }}
+                                        {{ item.rank }}
                                     </td>
 
 
                                     <td>
 
                                         <strong>
-                                            {{ participant.student.username }}
+                                            {{ item.participant.student.username }}
                                         </strong>
 
-                                        {% if participant.student.first_name or participant.student.last_name %}
+                                        {% if item.participant.student.first_name or item.participant.student.last_name %}
 
                                             <div class="small text-muted">
 
-                                                {{ participant.student.first_name }}
-                                                {{ participant.student.last_name }}
+                                                {{ item.participant.student.first_name }}
+                                                {{ item.participant.student.last_name }}
 
                                             </div>
 
@@ -272,16 +364,16 @@
 
                                     <td>
 
-                                        {{ participant.joined_at|date:"d M Y, h:i A" }}
+                                        {{ item.participant.joined_at|date:"d M Y, h:i A" }}
 
                                     </td>
 
 
                                     <td>
 
-                                        {% if participant.submitted_at %}
+                                        {% if item.participant.submitted_at %}
 
-                                            {{ participant.submitted_at|date:"d M Y, h:i A" }}
+                                            {{ item.participant.submitted_at|date:"d M Y, h:i A" }}
 
                                         {% else %}
 
@@ -294,13 +386,13 @@
 
                                     <td>
 
-                                        {% if participant.status == 'submitted' %}
+                                        {% if item.participant.status == 'submitted' %}
 
                                             <span class="badge bg-secondary">
                                                 Submitted
                                             </span>
 
-                                        {% elif participant.status == 'auto_submitted' %}
+                                        {% elif item.participant.status == 'auto_submitted' %}
 
                                             <span class="badge bg-danger">
                                                 Auto Submitted
@@ -309,7 +401,7 @@
                                         {% else %}
 
                                             <span class="badge bg-warning text-dark">
-                                                {{ participant.get_status_display }}
+                                                {{ item.participant.get_status_display }}
                                             </span>
 
                                         {% endif %}
@@ -320,12 +412,19 @@
                                     <td>
 
                                         <strong>
-                                            {{ participant.score }}
+                                            {{ item.participant.score }}
                                         </strong>
 
                                         <span class="text-muted">
-                                            / {{ participant.total_marks }}
+                                            / {{ item.participant.total_marks }}
                                         </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        {{ item.time_taken }}
 
                                     </td>
 
@@ -334,7 +433,7 @@
 
                                         <span class="badge bg-light text-dark">
 
-                                            {{ participant.violation_count }}
+                                            {{ item.participant.violation_count }}
 
                                         </span>
 
@@ -354,7 +453,7 @@
 
                 <div class="text-muted text-center py-4">
 
-                    No students participated in this exam.
+                    No submitted student results available for this exam.
 
                 </div>
 
