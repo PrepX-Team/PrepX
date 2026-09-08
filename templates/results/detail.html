@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 
 {% block content %}
@@ -17,9 +18,9 @@
         </a>
     </div>
 
-    <div class="row g-3 mb-4">
+    <div class="row row-cols-1 row-cols-md-{% if rank %}4{% else %}3{% endif %} g-3 mb-4">
 
-        <div class="col-md-4">
+        <div class="col">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center">
                     <div class="text-muted">Score</div>
@@ -30,7 +31,7 @@
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center">
                     <div class="text-muted">Accuracy</div>
@@ -41,7 +42,7 @@
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col">
             <div class="card shadow-sm h-100">
                 <div class="card-body text-center">
                     <div class="text-muted">Time Taken</div>
@@ -55,6 +56,19 @@
                 </div>
             </div>
         </div>
+
+        {% if rank %}
+            <div class="col">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="text-muted">My Rank</div>
+                        <div class="fs-3 fw-bold">
+                            {{ rank }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
 
     </div>
 
