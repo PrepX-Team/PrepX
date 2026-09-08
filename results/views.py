@@ -4,6 +4,10 @@ from django.shortcuts import get_object_or_404, render
 from accounts.decorators import role_required
 
 from .models import Result
+from .services import (
+    get_conducted_exam_leaderboard,
+    _format_duration,
+)
 
 
 @role_required('student')
@@ -42,6 +46,8 @@ def result_detail(request, result_id):
         student=request.user,
     )
 
+    rank = None
+
     if result.result_type == 'practice':
         answers = (
             result.practice_attempt.answers
@@ -78,7 +84,9 @@ def result_detail(request, result_id):
         )
 
         time_taken = (
-            attempt.end_time - attempt.start_time
+            _format_duration(
+                attempt.end_time - attempt.start_time
+            )
             if attempt.end_time and attempt.start_time
             else None
         )
@@ -112,10 +120,26 @@ def result_detail(request, result_id):
 
         participant = result.conducted_participant
 
+        if participant.exam.status == 'completed':
+            leaderboard = get_conducted_exam_leaderboard(
+                participant.exam
+            )
+
+            rank = next(
+                (
+                    item['rank']
+                    for item in leaderboard
+                    if item['participant'].pk == participant.pk
+                ),
+                None,
+            )
+
         title = participant.exam.exam_name
 
         time_taken = (
-            participant.submitted_at - participant.started_at
+            _format_duration(
+                participant.submitted_at - participant.started_at
+            )
             if participant.submitted_at and participant.started_at
             else None
         )
@@ -128,5 +152,6 @@ def result_detail(request, result_id):
             'title': title,
             'answers': context_answers,
             'time_taken': time_taken,
+            'rank': rank,
         },
     )
