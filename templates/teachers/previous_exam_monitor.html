@@ -484,6 +484,23 @@
             Download PDF Report
         </a>
 
+        <a
+            href="{% url 'teacher_previous_exam_csv' exam.id %}"
+            class="btn btn-outline-success"
+        >
+            <i class="bi bi-filetype-csv"></i>
+            Download CSV
+        </a>
+
+        <a
+            href="{% url 'teacher_previous_exam_excel' exam.id %}"
+            class="btn btn-success"
+        >
+            <i class="bi bi-file-earmark-excel"></i>
+            Download Excel
+        </a>
+
+
     </div>
 
 </div>
