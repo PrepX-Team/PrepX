@@ -818,3 +818,150 @@ class ResultViewTests(TestCase):
             response,
             'Unanswered'
         )
+
+
+class ConductedResultRankViewTests(TestCase):
+
+    def setUp(self):
+        self.teacher = User.objects.create_user(
+            username='rank_view_teacher',
+            email='rank_view_teacher@example.com',
+            password='pass12345',
+            role='teacher',
+            is_approved=True,
+        )
+        self.student = User.objects.create_user(
+            username='rank_view_student',
+            email='rank_view_student@example.com',
+            password='pass12345',
+            role='student',
+            is_approved=True,
+        )
+        self.other_student = User.objects.create_user(
+            username='rank_view_other',
+            email='rank_view_other@example.com',
+            password='pass12345',
+            role='student',
+            is_approved=True,
+        )
+        self.exam = ConductedExam.objects.create(
+            teacher=self.teacher,
+            exam_name='Rank View Exam',
+            duration_minutes=30,
+            status='completed',
+        )
+        self.client = Client()
+
+    def _create_result(self, student, score, minutes):
+        start = timezone.now()
+        participant = ConductedExamParticipant.objects.create(
+            exam=self.exam,
+            student=student,
+            status='submitted',
+            score=score,
+            total_marks=20,
+            started_at=start,
+            submitted_at=start + timezone.timedelta(
+                minutes=minutes
+            ),
+        )
+        return get_or_create_conducted_result(participant)
+
+    def _get_detail(self, result, student=None):
+        self.client.force_login(student or self.student)
+        return self.client.get(
+            reverse('result_detail', args=[result.pk])
+        )
+
+    def test_completed_exam_shows_own_rank(self):
+        result = self._create_result(
+            self.student, score=15, minutes=12
+        )
+        self._create_result(
+            self.other_student, score=18, minutes=20
+        )
+        third_student = User.objects.create_user(
+            username='rank_view_third',
+            email='rank_view_third@example.com',
+            password='pass12345',
+            role='student',
+            is_approved=True,
+        )
+        self._create_result(
+            third_student, score=15, minutes=7
+        )
+
+        response = self._get_detail(result)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['rank'], 3)
+        self.assertContains(response, 'My Rank')
+        self.assertNotContains(response, 'rank_view_other')
+        self.assertNotContains(response, 'rank_view_third')
+        self.assertNotIn('leaderboard', response.context)
+
+    def test_rank_is_hidden_until_exam_is_completed(self):
+        result = self._create_result(
+            self.student, score=15, minutes=12
+        )
+        self.exam.status = 'ongoing'
+        self.exam.save(update_fields=['status'])
+
+        response = self._get_detail(result)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['rank'])
+        self.assertNotContains(response, 'My Rank')
+
+    def test_practice_result_has_no_rank(self):
+        subject = Subject.objects.create(
+            name='Rank Practice Subject'
+        )
+        topic = Topic.objects.create(
+            subject=subject,
+            name='Rank Practice Topic',
+        )
+        start = timezone.now()
+        attempt = ExamAttempt.objects.create(
+            student=self.student,
+            topic=topic,
+            test_number=1,
+            start_time=start,
+            end_time=start + timezone.timedelta(minutes=5),
+            duration=30,
+            score=15,
+            accuracy=75.0,
+            status='submitted',
+        )
+        result = get_or_create_practice_result(attempt)
+
+        response = self._get_detail(result)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['rank'])
+        self.assertNotContains(response, 'My Rank')
+
+    def test_unranked_participant_has_no_rank(self):
+        result = self._create_result(
+            self.student, score=15, minutes=12
+        )
+        participant = result.conducted_participant
+        participant.started_at = None
+        participant.save(update_fields=['started_at'])
+
+        response = self._get_detail(result)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['rank'])
+        self.assertNotContains(response, 'My Rank')
+
+    def test_other_student_cannot_access_conducted_result(self):
+        result = self._create_result(
+            self.student, score=15, minutes=12
+        )
+
+        response = self._get_detail(
+            result, student=self.other_student
+        )
+
+        self.assertEqual(response.status_code, 404)
