@@ -12,6 +12,7 @@ from django.http import (
 from django.utils import timezone
 
 from .services.timer import get_remaining_seconds, is_editable
+from results.services import _format_duration
 from .models import ExamAttempt, ExamAnswer
 
 from accounts.decorators import role_required
@@ -489,8 +490,8 @@ def practice_result(request, attempt_id):
     )
 
     time_taken = (
-        attempt.end_time - attempt.start_time
-        if attempt.end_time
+        _format_duration(attempt.end_time - attempt.start_time)
+        if attempt.start_time and attempt.end_time
         else None
     )
 
@@ -527,4 +528,3 @@ def practice_result(request, attempt_id):
             ),
         },
     )
-

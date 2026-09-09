@@ -79,4 +79,6 @@ urlpatterns = [
         views.ongoing_exams,
         name='teacher_ongoing_exams',
     ),
+    path('exams/<int:exam_id>/previous-csv/', views.previous_exam_csv, name='teacher_previous_exam_csv'),
+    path('exams/<int:exam_id>/previous-excel/', views.previous_exam_excel, name='teacher_previous_exam_excel'),
 ]

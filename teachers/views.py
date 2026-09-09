@@ -1,4 +1,5 @@
 from decimal import Decimal, InvalidOperation
+from .reporting import build_exam_report, export_csv, export_excel
 from results.services import (
     get_conducted_exam_leaderboard,
     get_conducted_exam_summary,
@@ -10,6 +11,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 import string
+from xml.sax.saxutils import escape
 from accounts.decorators import role_required
 from questions.models import Question
 from subjects.models import Subject, Topic
@@ -1285,6 +1287,7 @@ def ongoing_exams(request):
 
 @role_required('teacher')
 def previous_exam_pdf(request, exam_id):
+    """Download the owning teacher's completed examination report."""
     exam = get_object_or_404(
         ConductedExam,
         pk=exam_id,
@@ -1292,41 +1295,31 @@ def previous_exam_pdf(request, exam_id):
         status='completed',
     )
 
-    participants = list(
-        exam.participants
-        .select_related('student')
-        .order_by('joined_at')
-    )
+    report = build_exam_report(exam)
+    leaderboard = report['leaderboard']
+    summary = report['summary']
+    participants = report['participants']
+    total_students = report['total_students']
+    total_questions = report['total_questions']
+    total_possible_marks = report['total_possible_marks']
+    correct_counts = report['correct_counts']
 
     # =========================================================
-    # BRAND COLORS
+    # BRAND COLORS / PDF RESPONSE
     # =========================================================
-
     BRAND_DARK = colors.HexColor('#3B2418')
     BRAND_GOLD = colors.HexColor('#F4B400')
     BRAND_LIGHT_GOLD = colors.HexColor('#FFF6D8')
-
     TEXT_DARK = colors.HexColor('#292524')
     TEXT_MUTED = colors.HexColor('#78716C')
     BORDER = colors.HexColor('#E7E5E4')
     LIGHT_BG = colors.HexColor('#FAFAF9')
-
-    SUCCESS = colors.HexColor('#15803D')
     DANGER = colors.HexColor('#B91C1C')
 
-    # =========================================================
-    # PDF RESPONSE
-    # =========================================================
-
     response = HttpResponse(content_type='application/pdf')
-
     response['Content-Disposition'] = (
         f'attachment; filename="PrepX_Exam_Report_{exam.id}.pdf"'
     )
-
-    # =========================================================
-    # DOCUMENT
-    # =========================================================
 
     document = SimpleDocTemplate(
         response,
@@ -1338,81 +1331,61 @@ def previous_exam_pdf(request, exam_id):
         title=f'PrepX - {exam.exam_name} Report',
         author='PrepX',
     )
-
     page_width, page_height = landscape(A4)
+    content_width = page_width - 30 * mm
 
     # =========================================================
     # STYLES
     # =========================================================
-
     styles = getSampleStyleSheet()
 
     title_style = ParagraphStyle(
         'ReportTitle',
         parent=styles['Title'],
         fontName='Helvetica-Bold',
-        fontSize=20,
-        leading=24,
+        fontSize=18,
+        leading=22,
         textColor=colors.white,
         alignment=TA_LEFT,
         spaceAfter=2,
     )
-
     subtitle_style = ParagraphStyle(
         'ReportSubtitle',
         parent=styles['Normal'],
-        fontName='Helvetica',
-        fontSize=9,
-        leading=12,
+        fontSize=8.5,
+        leading=11,
         textColor=colors.HexColor('#E7E5E4'),
-        alignment=TA_LEFT,
     )
-
     section_style = ParagraphStyle(
         'Section',
         parent=styles['Heading2'],
-        fontName='Helvetica-Bold',
         fontSize=12,
         leading=15,
         textColor=TEXT_DARK,
         spaceAfter=8,
     )
-
     normal_style = ParagraphStyle(
         'NormalCustom',
         parent=styles['Normal'],
-        fontName='Helvetica',
-        fontSize=8.5,
-        leading=11,
+        fontSize=8,
+        leading=10,
         textColor=TEXT_DARK,
+        wordWrap='CJK',
     )
-
     small_style = ParagraphStyle(
         'Small',
-        parent=styles['Normal'],
-        fontName='Helvetica',
-        fontSize=7.5,
-        leading=9,
-        textColor=TEXT_MUTED,
-    )
-
-    # ---------------------------------------------------------
-    # Card label
-    # ---------------------------------------------------------
-
-    card_label_style = ParagraphStyle(
-        'CardLabel',
-        parent=styles['Normal'],
-        fontName='Helvetica',
+        parent=normal_style,
         fontSize=7,
         leading=9,
         textColor=TEXT_MUTED,
     )
-
-    # ---------------------------------------------------------
-    # Card value
-    # ---------------------------------------------------------
-
+    card_label_style = ParagraphStyle(
+        'CardLabel',
+        parent=styles['Normal'],
+        fontSize=7,
+        leading=9,
+        textColor=TEXT_MUTED,
+    )
     card_value_style = ParagraphStyle(
         'CardValue',
         parent=styles['Normal'],
@@ -1421,53 +1394,76 @@ def previous_exam_pdf(request, exam_id):
         leading=19,
         textColor=TEXT_DARK,
     )
-
-    # ---------------------------------------------------------
-    # Table header
-    # ---------------------------------------------------------
-
+    date_value_style = ParagraphStyle(
+        'DateValue',
+        parent=card_value_style,
+        fontSize=11,
+        leading=14,
+    )
     table_header_style = ParagraphStyle(
         'TableHeader',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=7.5,
+        fontSize=7,
         leading=9,
         textColor=colors.white,
         alignment=TA_CENTER,
     )
 
+    def paragraph(value, style=normal_style):
+        return Paragraph(escape(str(value)), style)
+
+    def card(label, value, value_style=card_value_style):
+        return [
+            paragraph(label, card_label_style),
+            Spacer(1, 2),
+            paragraph(value, value_style),
+        ]
+
+    def card_table(items, background, border, height):
+        table = Table(
+            [items],
+            colWidths=[content_width / len(items)] * len(items),
+            rowHeights=[height],
+        )
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), background),
+            ('BOX', (0, 0), (-1, -1), 0.6, border),
+            ('INNERGRID', (0, 0), (-1, -1), 0.5, border),
+            ('LEFTPADDING', (0, 0), (-1, -1), 5 * mm),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 5 * mm),
+            ('TOPPADDING', (0, 0), (-1, -1), 3 * mm),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3 * mm),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        return table
+
+    def display_date(value):
+        if value is None:
+            return '-'
+        return timezone.localtime(value).strftime('%d %b %Y, %I:%M %p')
+
     # =========================================================
     # PAGE FOOTER
     # =========================================================
-
     def draw_footer(canvas, doc):
         canvas.saveState()
-
         canvas.setStrokeColor(BORDER)
         canvas.setLineWidth(0.5)
-
         canvas.line(
-            15 * mm,
-            10 * mm,
-            page_width - 15 * mm,
-            10 * mm,
+            15 * mm, 10 * mm,
+            page_width - 15 * mm, 10 * mm,
         )
-
         canvas.setFont('Helvetica', 7)
         canvas.setFillColor(TEXT_MUTED)
-
         canvas.drawString(
-            15 * mm,
-            6 * mm,
-            'PrepX • Conducted Examination Report',
+            15 * mm, 6 * mm,
+            'PrepX - Conducted Examination Report',
         )
-
         canvas.drawRightString(
-            page_width - 15 * mm,
-            6 * mm,
+            page_width - 15 * mm, 6 * mm,
             f'Page {doc.page}',
         )
-
         canvas.restoreState()
 
     elements = []
@@ -1475,779 +1471,263 @@ def previous_exam_pdf(request, exam_id):
     # =========================================================
     # HEADER
     # =========================================================
-
     logo_path = os.path.join(
-        settings.BASE_DIR,
-        'static',
-        'images',
-        'prepx-logo.png',
+        settings.BASE_DIR, 'static', 'images', 'prepx-logo.png',
     )
-
     header_content = []
 
     if os.path.exists(logo_path):
-        logo = Image(
-            logo_path,
-            width=35 * mm,
-            height=11 * mm,
-            kind='proportional',
-        )
+        header_content.extend([
+            Image(
+                logo_path,
+                width=35 * mm,
+                height=8 * mm,
+                kind='proportional',
+            ),
+            Spacer(1, 1 * mm),
+        ])
 
-        header_content.append(logo)
-        header_content.append(Spacer(1, 2 * mm))
-
-    header_content.append(
-        Paragraph(
-            'CONDUCTED EXAMINATION REPORT',
-            title_style,
-        )
-    )
-
-    header_content.append(
-        Paragraph(
-            exam.exam_name,
-            subtitle_style,
-        )
-    )
+    header_content.extend([
+        Paragraph('CONDUCTED EXAMINATION REPORT', title_style),
+        paragraph(exam.exam_name, subtitle_style),
+    ])
 
     header_table = Table(
         [[header_content]],
-        colWidths=[
-            page_width - 30 * mm
-        ],
-        rowHeights=[30 * mm],
+        colWidths=[content_width],
+        # Let the header grow if the logo or exam title needs more space.
     )
-
-    header_table.setStyle(
-        TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), BRAND_DARK),
-
-            ('LEFTPADDING', (0, 0), (-1, -1), 10 * mm),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 10 * mm),
-
-            ('TOPPADDING', (0, 0), (-1, -1), 5 * mm),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5 * mm),
-
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ])
-    )
-
-    elements.append(header_table)
-
-    elements.append(
-        Spacer(1, 8 * mm)
-    )
+    header_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), BRAND_DARK),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10 * mm),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10 * mm),
+        ('TOPPADDING', (0, 0), (-1, -1), 4 * mm),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4 * mm),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    elements.extend([header_table, Spacer(1, 6 * mm)])
 
     # =========================================================
     # EXAM INFORMATION
     # =========================================================
-
-    completed_date = '-'
-
-    if exam.ends_at:
-        completed_date = timezone.localtime(
-            exam.ends_at
-        ).strftime(
-            '%d %b %Y, %I:%M %p'
-        )
-
-    total_questions = exam.exam_questions.count()
-
-    total_students = len(participants)
-
-    # =========================================================
-    # SCORE CALCULATIONS
-    # =========================================================
-
-    total_score = Decimal('0')
-    highest_score = Decimal('0')
-
-    for participant in participants:
-
-        score = participant.score or Decimal('0')
-
-        total_score += score
-
-        if score > highest_score:
-            highest_score = score
-
-    if total_students:
-        average_score = (
-            total_score / total_students
-        )
-    else:
-        average_score = Decimal('0')
-
-    total_possible_marks = sum(
-        (
-            question.marks or Decimal('0')
-            for question in exam.exam_questions.all()
-        ),
-        Decimal('0'),
-    )
-
-    # =========================================================
-    # EXAM INFORMATION CARDS
-    # =========================================================
+    completed_date = display_date(exam.ends_at)
+    joined_students = exam.participants.count()
 
     info_cards = [
-        [
-            [
-                Paragraph(
-                    'EXAM DATE',
-                    card_label_style,
-                ),
-                Spacer(1, 2),
-                Paragraph(
-                    completed_date,
-                    card_value_style,
-                ),
-            ],
-
-            [
-                Paragraph(
-                    'DURATION',
-                    card_label_style,
-                ),
-                Spacer(1, 2),
-                Paragraph(
-                    f'{exam.duration_minutes} minutes',
-                    card_value_style,
-                ),
-            ],
-
-            [
-                Paragraph(
-                    'QUESTIONS',
-                    card_label_style,
-                ),
-                Spacer(1, 2),
-                Paragraph(
-                    str(total_questions),
-                    card_value_style,
-                ),
-            ],
-
-            [
-                Paragraph(
-                    'STUDENTS',
-                    card_label_style,
-                ),
-                Spacer(1, 2),
-                Paragraph(
-                    str(total_students),
-                    card_value_style,
-                ),
-            ],
-        ]
+        card('EXAM DATE', completed_date, date_value_style),
+        card('DURATION', f'{exam.duration_minutes} minutes'),
+        card('QUESTIONS', total_questions),
+        card('STUDENTS JOINED', joined_students),
     ]
+    elements.extend([
+        card_table(info_cards, LIGHT_BG, BORDER, 20 * mm),
+        Spacer(1, 4 * mm),
+        Paragraph('Performance Summary', section_style),
+    ])
 
-    info_table = Table(
-        info_cards,
-        colWidths=[
-            (page_width - 30 * mm) / 4,
-        ] * 4,
-        rowHeights=[20 * mm],
-    )
-
-    info_table.setStyle(
-        TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), LIGHT_BG),
-
-            ('BOX', (0, 0), (-1, -1), 0.6, BORDER),
-
-            ('INNERGRID', (0, 0), (-1, -1), 0.5, BORDER),
-
-            ('LEFTPADDING', (0, 0), (-1, -1), 6 * mm),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 6 * mm),
-
-            ('TOPPADDING', (0, 0), (-1, -1), 3 * mm),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 3 * mm),
-
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ])
-    )
-
-    elements.append(info_table)
-
-    elements.append(
-        Spacer(1, 7 * mm)
-    )
-
-    # =========================================================
-    # PERFORMANCE SUMMARY
-    # =========================================================
-
-    elements.append(
-        Paragraph(
-            'Performance Summary',
-            section_style,
-        )
-    )
-
-    average_display = f'{average_score:.2f}'
-
-    highest_display = f'{highest_score:.2f}'
-
+    # Summary uses evaluated students only, including negative scores.
     summary_cards = [
-        [
-            [
-                Paragraph(
-                    'TOTAL STUDENTS',
-                    card_label_style,
-                ),
-                Spacer(1, 2),
-                Paragraph(
-                    str(total_students),
-                    card_value_style,
-                ),
-            ],
-
-            [
-                Paragraph(
-                    'AVERAGE SCORE',
-                    card_label_style,
-                ),
-                Spacer(1, 2),
-                Paragraph(
-                    average_display,
-                    card_value_style,
-                ),
-            ],
-
-            [
-                Paragraph(
-                    'HIGHEST SCORE',
-                    card_label_style,
-                ),
-                Spacer(1, 2),
-                Paragraph(
-                    highest_display,
-                    card_value_style,
-                ),
-            ],
-
-            [
-                Paragraph(
-                    'TOTAL MARKS',
-                    card_label_style,
-                ),
-                Spacer(1, 2),
-                Paragraph(
-                    str(total_possible_marks),
-                    card_value_style,
-                ),
-            ],
-        ]
+        card('EVALUATED STUDENTS', total_students),
+        card('AVERAGE SCORE', f"{summary['average_score']:.2f}"),
+        card('HIGHEST SCORE', f"{summary['highest_score']:.2f}"),
+        card('TOTAL MARKS', f'{total_possible_marks:.2f}'),
     ]
-
-    summary_table = Table(
-        summary_cards,
-        colWidths=[
-            (page_width - 30 * mm) / 4,
-        ] * 4,
-        rowHeights=[22 * mm],
-    )
-
-    summary_table.setStyle(
-        TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), BRAND_LIGHT_GOLD),
-
-            ('BOX', (0, 0), (-1, -1), 0.8, BRAND_GOLD),
-
-            (
-                'INNERGRID',
-                (0, 0),
-                (-1, -1),
-                0.5,
-                colors.HexColor('#E8D48A'),
-            ),
-
-            ('LEFTPADDING', (0, 0), (-1, -1), 6 * mm),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 6 * mm),
-
-            ('TOPPADDING', (0, 0), (-1, -1), 3 * mm),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 3 * mm),
-
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ])
-    )
-
-    elements.append(summary_table)
-
-    elements.append(
-        Spacer(1, 8 * mm)
-    )
+    elements.extend([
+        card_table(
+            summary_cards, BRAND_LIGHT_GOLD, BRAND_GOLD, 20 * mm,
+        ),
+        Spacer(1, 5 * mm),
+        Paragraph('Student Results', section_style),
+    ])
 
     # =========================================================
-    # STUDENT RESULTS
+    # STUDENT RESULTS TABLE
     # =========================================================
-
-    elements.append(
-        Paragraph(
-            'Student Results',
-            section_style,
-        )
-    )
-
-    # ---------------------------------------------------------
-    # TABLE HEADER
-    # ---------------------------------------------------------
-
+    headers = [
+        'RANK', 'STUDENT', 'JOINED AT', 'SUBMITTED AT',
+        'STATUS', 'SCORE', 'ACCURACY', 'TIME TAKEN', 'VIOLATIONS',
+    ]
     table_data = [
-        [
-            Paragraph('#', table_header_style),
-
-            Paragraph(
-                'STUDENT',
-                table_header_style,
-            ),
-
-            Paragraph(
-                'JOINED AT',
-                table_header_style,
-            ),
-
-            Paragraph(
-                'SUBMITTED AT',
-                table_header_style,
-            ),
-
-            Paragraph(
-                'STATUS',
-                table_header_style,
-            ),
-
-            Paragraph(
-                'SCORE',
-                table_header_style,
-            ),
-
-            Paragraph(
-                'VIOLATIONS',
-                table_header_style,
-            ),
-        ]
+        [paragraph(header, table_header_style) for header in headers]
     ]
+    violation_rows = []
 
-    # =========================================================
-    # STUDENT ROWS
-    # =========================================================
+    for row_index, item in enumerate(leaderboard, start=1):
+        participant = item['participant']
+        student = participant.student
+        student_name = student.get_full_name() or student.username
 
-    for index, participant in enumerate(
-        participants,
-        start=1,
-    ):
-
-        student_name = (
-            participant.student.get_full_name()
-            or participant.student.username
+        correct = correct_counts.get(participant.pk, 0)
+        accuracy = (
+            f'{correct / total_questions * 100:.2f}%'
+            if total_questions
+            else 'N/A'
         )
 
-        # -----------------------------------------------------
-        # Joined time - IST
-        # -----------------------------------------------------
-
-        joined_at = (
-            timezone.localtime(
-                participant.joined_at
-            ).strftime(
-                '%d %b %Y, %I:%M %p'
-            )
-            if participant.joined_at
-            else '-'
-        )
-
-        # -----------------------------------------------------
-        # Submitted time - IST
-        # -----------------------------------------------------
-
-        submitted_at = (
-            timezone.localtime(
-                participant.submitted_at
-            ).strftime(
-                '%d %b %Y, %I:%M %p'
-            )
-            if participant.submitted_at
-            else '-'
-        )
-
-        # -----------------------------------------------------
-        # Status
-        # -----------------------------------------------------
-
-        status = participant.get_status_display()
-
-        # -----------------------------------------------------
-        # Score
-        # -----------------------------------------------------
-
-        score = (
-            participant.score
-            or Decimal('0')
-        )
-
-        marks = (
-            participant.total_marks
-            or Decimal('0')
-        )
-
-        # -----------------------------------------------------
-        # Student
-        # -----------------------------------------------------
-
+        score = participant.score or Decimal('0')
+        marks = participant.total_marks or Decimal('0')
         student_paragraph = Paragraph(
-            f'<b>{student_name}</b>'
-            f'<br/>'
+            f'<b>{escape(student_name)}</b><br/>'
             f'<font color="#78716C" size="7">'
-            f'@{participant.student.username}'
-            f'</font>',
+            f'@{escape(student.username)}</font>',
             normal_style,
         )
-
-        # -----------------------------------------------------
-        # Status
-        # -----------------------------------------------------
 
         if participant.status == 'submitted':
-
-            status_paragraph = Paragraph(
-                '<font color="#15803D">'
-                '<b>● Submitted</b>'
-                '</font>',
-                normal_style,
-            )
-
-        elif participant.status == 'auto_submitted':
-
-            status_paragraph = Paragraph(
-                '<font color="#B91C1C">'
-                '<b>● Auto Submitted</b>'
-                '</font>',
-                normal_style,
-            )
-
+            status_text = 'Submitted'
+            status_color = '#15803D'
         else:
+            status_text = 'Auto Submitted'
+            status_color = '#B91C1C'
 
-            status_paragraph = Paragraph(
-                f'<b>{status}</b>',
-                normal_style,
-            )
-
-        # -----------------------------------------------------
-        # Score display
-        # -----------------------------------------------------
-
+        status_paragraph = Paragraph(
+            f'<font color="{status_color}">'
+            f'<b>{status_text}</b></font>',
+            normal_style,
+        )
         score_paragraph = Paragraph(
-            f'<b>{score}</b> '
-            f'<font color="#78716C">'
-            f'/ {marks}'
-            f'</font>',
+            f'<b>{score:.2f}</b><br/>'
+            f'<font color="#78716C">/ {marks:.2f}</font>',
             normal_style,
         )
 
-        # -----------------------------------------------------
-        # Violations
-        # -----------------------------------------------------
-
-        violation_count = (
-            participant.violation_count
-            or 0
+        violation_count = participant.violation_count or 0
+        violation_color = (
+            '#B91C1C' if violation_count else '#15803D'
         )
-
-        if violation_count > 0:
-
-            violation_paragraph = Paragraph(
-                f'<font color="#B91C1C">'
-                f'<b>{violation_count}</b>'
-                f'</font>',
-                normal_style,
-            )
-
-        else:
-
-            violation_paragraph = Paragraph(
-                '<font color="#15803D">'
-                '<b>0</b>'
-                '</font>',
-                normal_style,
-            )
-
-        # -----------------------------------------------------
-        # Add row
-        # -----------------------------------------------------
+        violation_paragraph = Paragraph(
+            f'<font color="{violation_color}">'
+            f'<b>{violation_count}</b></font>',
+            normal_style,
+        )
+        if violation_count:
+            violation_rows.append(row_index)
 
         table_data.append([
-            Paragraph(
-                str(index),
-                normal_style,
-            ),
-
+            paragraph(item['rank']),
             student_paragraph,
-
-            Paragraph(
-                joined_at,
-                small_style,
-            ),
-
-            Paragraph(
-                submitted_at,
-                small_style,
-            ),
-
+            paragraph(display_date(participant.joined_at), small_style),
+            paragraph(display_date(participant.submitted_at), small_style),
             status_paragraph,
-
             score_paragraph,
-
+            paragraph(accuracy),
+            paragraph(item['time_taken'], small_style),
             violation_paragraph,
         ])
 
-    # =========================================================
-    # STUDENT TABLE
-    # =========================================================
+    if not leaderboard:
+        table_data.append([
+            paragraph('No finalized results are available.', small_style),
+            '', '', '', '', '', '', '', '',
+        ])
 
+    # Landscape A4: 297 - 30 mm margins = 267 mm of available width.
+    # All nine columns fit within that width.
     student_table = Table(
         table_data,
         repeatRows=1,
         colWidths=[
-            10 * mm,
-            55 * mm,
-            38 * mm,
-            38 * mm,
-            38 * mm,
-            32 * mm,
-            25 * mm,
+            12 * mm, 49 * mm, 34 * mm, 34 * mm, 31 * mm,
+            28 * mm, 24 * mm, 34 * mm, 21 * mm,
         ],
+        hAlign='LEFT',
     )
-
     student_table_style = [
-        # -----------------------------------------------------
-        # Header
-        # -----------------------------------------------------
-
-        (
-            'BACKGROUND',
-            (0, 0),
-            (-1, 0),
-            BRAND_DARK,
-        ),
-
-        (
-            'TEXTCOLOR',
-            (0, 0),
-            (-1, 0),
-            colors.white,
-        ),
-
-        # -----------------------------------------------------
-        # Body
-        # -----------------------------------------------------
-
-        (
-            'BACKGROUND',
-            (0, 1),
-            (-1, -1),
-            colors.white,
-        ),
-
-        (
-            'ROWBACKGROUNDS',
-            (0, 1),
-            (-1, -1),
-            [
-                colors.white,
-                LIGHT_BG,
-            ],
-        ),
-
-        # -----------------------------------------------------
-        # Borders
-        # -----------------------------------------------------
-
-        (
-            'BOX',
-            (0, 0),
-            (-1, -1),
-            0.7,
-            BORDER,
-        ),
-
-        (
-            'INNERGRID',
-            (0, 0),
-            (-1, -1),
-            0.4,
-            BORDER,
-        ),
-
-        # -----------------------------------------------------
-        # Padding
-        # -----------------------------------------------------
-
-        (
-            'LEFTPADDING',
-            (0, 0),
-            (-1, -1),
-            3 * mm,
-        ),
-
-        (
-            'RIGHTPADDING',
-            (0, 0),
-            (-1, -1),
-            3 * mm,
-        ),
-
-        (
-            'TOPPADDING',
-            (0, 0),
-            (-1, -1),
-            3 * mm,
-        ),
-
-        (
-            'BOTTOMPADDING',
-            (0, 0),
-            (-1, -1),
-            3 * mm,
-        ),
-
-        # -----------------------------------------------------
-        # Alignment
-        # -----------------------------------------------------
-
-        (
-            'VALIGN',
-            (0, 0),
-            (-1, -1),
-            'MIDDLE',
-        ),
-
-        (
-            'ALIGN',
-            (0, 0),
-            (0, -1),
-            'CENTER',
-        ),
-
-        (
-            'ALIGN',
-            (5, 1),
-            (6, -1),
-            'CENTER',
-        ),
+        ('BACKGROUND', (0, 0), (-1, 0), BRAND_DARK),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, LIGHT_BG]),
+        ('BOX', (0, 0), (-1, -1), 0.7, BORDER),
+        ('INNERGRID', (0, 0), (-1, -1), 0.4, BORDER),
+        ('LEFTPADDING', (0, 0), (-1, -1), 2 * mm),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 2 * mm),
+        ('TOPPADDING', (0, 0), (-1, -1), 3 * mm),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3 * mm),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+        ('ALIGN', (5, 1), (8, -1), 'CENTER'),
     ]
+    if not leaderboard:
+        student_table_style.append(('SPAN', (0, 1), (-1, 1)))
 
-    # =========================================================
-    # HIGHLIGHT VIOLATIONS
-    # =========================================================
+    for row_index in violation_rows:
+        student_table_style.append(
+            ('LINEBEFORE', (8, row_index), (8, row_index), 2, DANGER)
+        )
 
-    for row_index, participant in enumerate(
-        participants,
-        start=1,
-    ):
-
-        if participant.violation_count > 0:
-
-            student_table_style.append(
-                (
-                    'LINEBEFORE',
-                    (6, row_index),
-                    (6, row_index),
-                    2,
-                    DANGER,
-                )
-            )
-
-    student_table.setStyle(
-        TableStyle(student_table_style)
-    )
-
+    student_table.setStyle(TableStyle(student_table_style))
     elements.append(student_table)
 
     # =========================================================
     # REPORT NOTE
     # =========================================================
-
-    elements.append(
-        Spacer(1, 7 * mm)
+    elements.append(Spacer(1, 4 * mm))
+    note = (
+        'Ranks are ordered by higher score, then shorter exact '
+        'completion time. Only finalized submissions with valid '
+        'start and submission times are ranked. '
+        'Accuracy is correct answers divided by total exam questions. '
+        'Scores include the configured negative marking. '
+        'Violation counts are based on recorded exam security events.'
     )
-
     report_note = Table(
-        [[
-            Paragraph(
-                '<b>PrepX Security & Evaluation</b>'
-                '<br/>'
-                '<font color="#78716C">'
-                'Scores and violation counts shown in this '
-                'report are based on the final examination '
-                'submission data.'
-                '</font>',
-                normal_style,
-            )
-        ]],
-        colWidths=[
-            page_width - 30 * mm
-        ],
+        [[Paragraph(
+            '<b>PrepX Security &amp; Evaluation</b><br/>'
+            f'<font color="#78716C">{escape(note)}</font>',
+            normal_style,
+        )]],
+        colWidths=[content_width],
     )
-
-    report_note.setStyle(
-        TableStyle([
-            (
-                'BACKGROUND',
-                (0, 0),
-                (-1, -1),
-                LIGHT_BG,
-            ),
-
-            (
-                'BOX',
-                (0, 0),
-                (-1, -1),
-                0.6,
-                BORDER,
-            ),
-
-            (
-                'LEFTPADDING',
-                (0, 0),
-                (-1, -1),
-                5 * mm,
-            ),
-
-            (
-                'RIGHTPADDING',
-                (0, 0),
-                (-1, -1),
-                5 * mm,
-            ),
-
-            (
-                'TOPPADDING',
-                (0, 0),
-                (-1, -1),
-                4 * mm,
-            ),
-
-            (
-                'BOTTOMPADDING',
-                (0, 0),
-                (-1, -1),
-                4 * mm,
-            ),
-        ])
-    )
-
+    report_note.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), LIGHT_BG),
+        ('BOX', (0, 0), (-1, -1), 0.6, BORDER),
+        ('LEFTPADDING', (0, 0), (-1, -1), 5 * mm),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 5 * mm),
+        ('TOPPADDING', (0, 0), (-1, -1), 4 * mm),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4 * mm),
+    ]))
     elements.append(report_note)
-
-    # =========================================================
-    # BUILD PDF
-    # =========================================================
 
     document.build(
         elements,
         onFirstPage=draw_footer,
         onLaterPages=draw_footer,
     )
-
     return response
+
+
+def _download_exam_report(request, exam_id, file_format):
+    exam = get_object_or_404(
+        ConductedExam,
+        pk=exam_id,
+        teacher=request.user,
+        status='completed',
+    )
+    report = build_exam_report(exam)
+
+    if file_format == 'csv':
+        content = export_csv(report)
+        content_type = 'text/csv; charset=utf-8'
+    elif file_format == 'xlsx':
+        content = export_excel(report)
+        content_type = (
+            'application/vnd.openxmlformats-officedocument.'
+            'spreadsheetml.sheet'
+        )
+    else:
+        raise ValueError('Unsupported report format.')
+
+    response = HttpResponse(content, content_type=content_type)
+    response['Content-Disposition'] = (
+        f'attachment; filename="PrepX_Exam_Report_{exam.id}.{file_format}"'
+    )
+    return response
+
+
+@role_required('teacher')
+def previous_exam_csv(request, exam_id):
+    return _download_exam_report(request, exam_id, 'csv')
+
+
+@role_required('teacher')
+def previous_exam_excel(request, exam_id):
+    return _download_exam_report(request, exam_id, 'xlsx')
