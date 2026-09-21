@@ -1,148 +1,24 @@
-<ul class="nav nav-pills flex-column">
-
+<ul class="nav nav-pills flex-column prepx-nav">
     {% if user.role == 'student' %}
-
-        <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}" href="{% url 'student_dashboard' %}">
-                <i class="bi bi-speedometer2"></i>
-                Dashboard
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'practice_home' %}active{% endif %}"
-               href="{% url 'practice_home' %}">
-                <i class="bi bi-pencil-square"></i>
-                Practice
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'student_join_exam' %}active{% endif %}"
-            href="{% url 'student_join_exam' %}">
-                <i class="bi bi-door-open"></i>
-                Join Exam
-            </a>
-        </li>
-
-
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'result_list' %}">
-                <i class="bi bi-clipboard-check"></i>
-                Results
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link disabled" href="#">
-                <i class="bi bi-award"></i>
-                Certificates
-                <span class="badge bg-secondary">Soon</span>
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'student_analytics' %}">
-                <i class="bi bi-graph-up"></i>
-                Analytics
-            </a>
-        </li>
-
-
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}" href="{% url 'student_dashboard' %}"><i class="bi bi-grid-1x2"></i><span>Overview</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'practice_home' %}active{% endif %}" href="{% url 'practice_home' %}"><i class="bi bi-journal-check"></i><span>Practice tests</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'student_join_exam' %}active{% endif %}" href="{% url 'student_join_exam' %}"><i class="bi bi-door-open"></i><span>Join an exam</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'result_list' or request.resolver_match.url_name == 'result_detail' %}active{% endif %}" href="{% url 'result_list' %}"><i class="bi bi-clipboard-data"></i><span>My results</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'student_analytics' %}active{% endif %}" href="{% url 'student_analytics' %}"><i class="bi bi-bar-chart-line"></i><span>Analytics</span></a></li>
+    <li class="nav-item"><span class="nav-link disabled"><i class="bi bi-award"></i><span>Certificates</span><span class="badge badge-soon ms-auto">Soon</span></span></li>
     {% elif user.role == 'teacher' %}
-
-        <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'teacher_dashboard' %}active{% endif %}" href="{% url 'teacher_dashboard' %}">
-                <i class="bi bi-speedometer2"></i>
-                Dashboard
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'question_list' %}active{% endif %}" href="{% url 'question_list' %}">
-                <i class="bi bi-question-circle"></i>
-                Question Bank
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'add_question' %}active{% endif %}" href="{% url 'add_question' %}">
-                <i class="bi bi-plus-circle"></i>
-                Add Question
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'teacher_create_exam' %}">
-                <i class="bi bi-file-earmark-text"></i>
-                Create Exam
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'teacher_ongoing_exams' %}">
-                <i class="bi bi-file-earmark-text"></i>
-                Continue Ongoing Exam
-            </a>
-
-        </li>
-        
-
-        <li class="nav-item">
-            <a class="nav-link" href="{% url 'teacher_previous_conducted_exams' %}">
-                <i class="bi bi-file-earmark-text"></i>
-                Previous Conducted Exams
-            </a>
-
-        </li>
-
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'teacher_dashboard' %}active{% endif %}" href="{% url 'teacher_dashboard' %}"><i class="bi bi-grid-1x2"></i><span>Overview</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'question_list' %}active{% endif %}" href="{% url 'question_list' %}"><i class="bi bi-journal-text"></i><span>Question bank</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'add_question' %}active{% endif %}" href="{% url 'add_question' %}"><i class="bi bi-plus-circle"></i><span>Add question</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'teacher_create_exam' %}active{% endif %}" href="{% url 'teacher_create_exam' %}"><i class="bi bi-file-earmark-plus"></i><span>Create exam</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'teacher_ongoing_exams' %}active{% endif %}" href="{% url 'teacher_ongoing_exams' %}"><i class="bi bi-broadcast"></i><span>Ongoing exams</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'teacher_previous_conducted_exams' %}active{% endif %}" href="{% url 'teacher_previous_conducted_exams' %}"><i class="bi bi-clock-history"></i><span>Previous exams</span></a></li>
     {% elif user.role == 'admin' %}
-
-        <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}" href="{% url 'admin_dashboard' %}">
-                <i class="bi bi-speedometer2"></i>
-                Dashboard
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'pending_teachers' %}active{% endif %}" href="{% url 'pending_teachers' %}">
-                <i class="bi bi-person-check"></i>
-                Teacher Approvals
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'subject_list' %}active{% endif %}" href="{% url 'subject_list' %}">
-                <i class="bi bi-journal-bookmark"></i>
-                Subjects
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link {% if request.resolver_match.url_name == 'question_list' %}active{% endif %}" href="{% url 'question_list' %}">
-                <i class="bi bi-question-circle"></i>
-                Questions
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link {% if request.path == '/admin/' %}active{% endif %}" href="/admin/">
-                <i class="bi bi-gear"></i>
-                Django Admin
-            </a>
-        </li>
-
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}" href="{% url 'admin_dashboard' %}"><i class="bi bi-grid-1x2"></i><span>Overview</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'pending_teachers' %}active{% endif %}" href="{% url 'pending_teachers' %}"><i class="bi bi-person-check"></i><span>Teacher approvals</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'subject_list' %}active{% endif %}" href="{% url 'subject_list' %}"><i class="bi bi-journal-bookmark"></i><span>Subjects</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'question_list' %}active{% endif %}" href="{% url 'question_list' %}"><i class="bi bi-question-circle"></i><span>Questions</span></a></li>
+    <li class="nav-item"><a class="nav-link {% if request.path == '/admin/' %}active{% endif %}" href="/admin/"><i class="bi bi-gear"></i><span>Django admin</span></a></li>
     {% endif %}
-
-
-    <!-- Common Profile Link -->
-
-    <li class="nav-item mt-2">
-        <a class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'profile' %}">
-            <i class="bi bi-person"></i>
-            Profile
-        </a>
-    </li>
-
+    <li class="nav-item nav-separator"><a class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'profile' %}"><i class="bi bi-person-circle"></i><span>My profile</span></a></li>
 </ul>

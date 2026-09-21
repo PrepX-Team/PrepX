@@ -1,41 +1,47 @@
 {% extends 'base.html' %}
-
+{% block title %} · Student dashboard{% endblock %}
 {% block content %}
-
-<h4>
-    Welcome, {{ user.first_name|default:user.username }}
-</h4>
-
-<div class="row mt-3 g-3">
-
-    <div class="col-md-3">
-        <div class="card card-stat p-3 text-center">
-            <h3>{{ tests_attempted }}</h3>
-            <small>Tests Attempted</small>
-        </div>
+<div class="dashboard-page">
+    <div class="dashboard-topline">
+        <span><span class="status-dot"></span> STUDENT WORKSPACE</span>
+        <span class="dashboard-date">{% now "l, d F Y" %}</span>
     </div>
 
-    <div class="col-md-3">
-        <div class="card card-stat p-3 text-center">
-            <h3>{{ average_score }}</h3>
-            <small>Average Score</small>
+    <section class="dashboard-hero" aria-labelledby="dashboard-title">
+        <div class="hero-content">
+            <span class="hero-eyebrow"><i class="bi bi-stars me-1"></i> YOUR LEARNING JOURNEY</span>
+            <h1 id="dashboard-title">Ready to make<br><em>progress, {{ user.first_name|default:user.username }}?</em></h1>
+            <p>Every practice session brings you closer to exam day. Pick up where you left off and keep moving forward.</p>
+            <div class="hero-actions">
+                <a class="btn hero-button" href="{% url 'practice_home' %}">Start practicing <i class="bi bi-arrow-up-right ms-2"></i></a>
+                <a class="hero-text-link" href="{% url 'student_analytics' %}">View progress <i class="bi bi-arrow-right ms-1"></i></a>
+            </div>
         </div>
+        <div class="hero-art" aria-hidden="true">
+            <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span>
+            <span class="hero-art-core"><i class="bi bi-mortarboard-fill"></i></span>
+            <span class="hero-art-spark spark-one">✦</span><span class="hero-art-spark spark-two">✧</span>
+        </div>
+    </section>
+
+    <div class="section-heading">
+        <div><span class="section-kicker">AT A GLANCE</span><h2>Your performance</h2></div>
+        <span class="section-note">Overview of your learning activity</span>
+    </div>
+    <div class="row g-3 metric-grid">
+        <div class="col-6 col-xl-3"><div class="metric-card"><span class="metric-icon icon-amber"><i class="bi bi-clipboard-check"></i></span><span class="metric-label">Tests attempted</span><strong class="metric-value">{{ tests_attempted }}</strong><span class="metric-foot">Completed practice</span></div></div>
+        <div class="col-6 col-xl-3"><div class="metric-card"><span class="metric-icon icon-violet"><i class="bi bi-graph-up-arrow"></i></span><span class="metric-label">Average score</span><strong class="metric-value">{{ average_score }}</strong><span class="metric-foot">Across your tests</span></div></div>
+        <div class="col-6 col-xl-3"><div class="metric-card"><span class="metric-icon icon-blue"><i class="bi bi-book-half"></i></span><span class="metric-label">Topics started</span><strong class="metric-value">{{ topics_started }}</strong><span class="metric-foot">Areas explored</span></div></div>
+        <div class="col-6 col-xl-3"><div class="metric-card"><span class="metric-icon icon-green"><i class="bi bi-award"></i></span><span class="metric-label">Certificates</span><strong class="metric-value">{{ certificates_earned }}</strong><span class="metric-foot">Recognition earned</span></div></div>
     </div>
 
-    <div class="col-md-3">
-        <div class="card card-stat p-3 text-center">
-            <h3>{{ topics_started }}</h3>
-            <small>Topics Started</small>
-        </div>
+    <div class="section-heading section-heading-actions">
+        <div><span class="section-kicker">YOUR NEXT MOVE</span><h2>Keep the momentum</h2></div>
     </div>
-
-    <div class="col-md-3">
-        <div class="card card-stat p-3 text-center">
-            <h3>{{ certificates_earned }}</h3>
-            <small>Certificates</small>
-        </div>
+    <div class="row g-3 action-grid">
+        <div class="col-md-6 col-xl-4"><a class="action-card" href="{% url 'practice_home' %}"><span class="action-icon action-practice"><i class="bi bi-pencil-square"></i></span><span class="action-title">Practice a topic <i class="bi bi-arrow-up-right"></i></span><span class="action-copy">Build confidence, one question at a time.</span><span class="action-cta">Explore practice <i class="bi bi-arrow-right"></i></span></a></div>
+        <div class="col-md-6 col-xl-4"><a class="action-card" href="{% url 'student_join_exam' %}"><span class="action-icon action-exam"><i class="bi bi-file-earmark-check"></i></span><span class="action-title">Join an exam <i class="bi bi-arrow-up-right"></i></span><span class="action-copy">Have an exam key? Your test awaits.</span><span class="action-cta">Enter exam <i class="bi bi-arrow-right"></i></span></a></div>
+        <div class="col-md-6 col-xl-4"><a class="action-card" href="{% url 'result_list' %}"><span class="action-icon action-results"><i class="bi bi-bar-chart-line"></i></span><span class="action-title">Review results <i class="bi bi-arrow-up-right"></i></span><span class="action-copy">See what went well and what comes next.</span><span class="action-cta">View results <i class="bi bi-arrow-right"></i></span></a></div>
     </div>
-
 </div>
-
 {% endblock %}
