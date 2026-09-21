@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %} · Certificates{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <h1 class="h3 mb-2">My Certificates</h1>
+  <p class="text-muted mb-4">Complete all 10 practice tests in a topic to earn a certificate.</p>
+  <div class="row g-3">
+    {% for certificate in certificates %}
+      <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body">
+            <h2 class="h5">{{ certificate.topic.name }}</h2>
+            <p class="mb-1">{{ certificate.topic.subject.name }}</p>
+            <p class="text-muted small">Completed: {{ certificate.completed_at|date:'d M Y' }}</p>
+            <p class="small text-break">ID: {{ certificate.certificate_id }}</p>
+            <a class="btn btn-primary me-2" href="{% url 'certificate_pdf' certificate.certificate_id %}">Download PDF</a>
+            <a class="btn btn-outline-secondary" href="{% url 'certificate_verify' certificate.certificate_id %}">Verify</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="card text-center shadow-sm">
+          <div class="card-body py-5">
+            <h2 class="h5">No certificates yet</h2>
+            <p>Complete Test 1 to Test 10 in one topic to unlock your certificate.</p>
+            <a class="btn btn-primary" href="{% url 'practice_home' %}">Go to Practice</a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,44 +1,14 @@
 {% extends 'base.html' %}
-
+{% block title %} · Practice tests{% endblock %}
 {% block content %}
-<h4>{{ topic.subject.name }} — {{ topic.name }}</h4>
-
-<div class="row g-2">
-    {% for t in tests %}
-    <div class="col-md-3">
-        <div class="card card-stat p-3 text-center">
-            <h5>Test {{ t.number }}</h5>
-
-            {% if not t.unlocked %}
-                <span class="badge bg-secondary mb-2">
-                    Locked
-                </span>
-
-                <p class="small text-secondary">
-                    Complete previous test to unlock.
-                </p>
-
-            {% elif not t.available %}
-                <span class="badge bg-warning text-dark mb-2">
-                    Unavailable
-                </span>
-
-                <p class="small text-secondary">
-                    Only {{ t.available_count }} of 20 questions ready.
-                </p>
-
-            {% else %}
-                <span class="badge bg-success mb-2">
-                    Unlocked
-                </span>
-
-                <a href="{% url 'practice_instructions' topic.id t.number %}"
-                   class="btn btn-primary btn-sm">
-                    Start Test
-                </a>
-            {% endif %}
-        </div>
-    </div>
-    {% endfor %}
+<div class="prepx-page"><section class="inner-page-hero"><div><span class="section-kicker">{{ topic.subject.name|upper }}</span><h1>{{ topic.name }}</h1><p>Clear each test to unlock the next. Complete all ten tests for a verifiable certificate.</p></div><i class="bi bi-check2-square" aria-hidden="true"></i></section>
+  <div class="section-heading"><div><span class="section-kicker">PRACTICE PATH</span><h2>Your ten tests</h2></div></div>
+  <div class="row g-3">{% for t in tests %}<div class="col-sm-6 col-lg-4 col-xl-3"><div class="card prepx-panel h-100 p-4">
+    <span class="metric-icon {% if not t.unlocked %}icon-blue{% elif not t.available %}icon-violet{% else %}icon-amber{% endif %}"><i class="bi {% if not t.unlocked %}bi-lock{% elif not t.available %}bi-hourglass-split{% else %}bi-lightning-charge{% endif %}"></i></span>
+    <div class="d-flex justify-content-between align-items-center mb-2"><h3 class="h5 mb-0">Test {{ t.number }}</h3>{% if not t.unlocked %}<span class="badge bg-secondary">Locked</span>{% elif not t.available %}<span class="badge bg-warning text-dark">Unavailable</span>{% else %}<span class="badge bg-success">Unlocked</span>{% endif %}</div>
+    {% if not t.unlocked %}<p class="small text-muted">Complete the previous test at the required accuracy to unlock.</p>
+    {% elif not t.available %}<p class="small text-muted">{{ t.available_count }} of 20 approved questions are ready.</p>
+    {% else %}<p class="small text-muted">20 questions · Test {{ t.number }} of 10</p><a href="{% url 'practice_instructions' topic.id t.number %}" class="btn btn-primary mt-auto">Start test <i class="bi bi-arrow-right ms-2"></i></a>{% endif %}
+  </div></div>{% endfor %}</div>
 </div>
 {% endblock %}

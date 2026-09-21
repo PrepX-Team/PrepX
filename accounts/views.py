@@ -120,6 +120,13 @@ def role_redirect(request):
 
 # ---------- Dashboards ----------
 
+def _student_certificate_count(student):
+    from certificates.models import Certificate
+    from certificates.services import sync_student_certificates
+    sync_student_certificates(student)
+    return Certificate.objects.filter(student=student).count()
+
+
 @role_required('student')
 def student_dashboard(request):
     submitted_attempts = ExamAttempt.objects.filter(
@@ -147,8 +154,7 @@ def student_dashboard(request):
         'average_score': round(average_score, 2),
         'topics_started': topics_started,
 
-        # Certificates module has not been implemented yet.
-        'certificates_earned': 0,
+        'certificates_earned': _student_certificate_count(request.user),
     }
 
     return render(

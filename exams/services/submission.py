@@ -1,7 +1,7 @@
-from django.db import transaction
+﻿from django.db import transaction
 from django.utils import timezone
 
-from core.constants import UNLOCK_PERCENTAGE, MAX_TEST_NUMBER
+from core.constants import UNLOCK_PERCENTAGE, MAX_TEST_NUMBER, DEFAULT_PRACTICE_DURATION_MINUTES
 from .evaluation import (
     evaluate_answers,
     calculate_score,
@@ -110,7 +110,9 @@ def submit_practice_attempt(attempt):
             total,
         )
 
-        locked.end_time = timezone.now()
+        duration = locked.duration or DEFAULT_PRACTICE_DURATION_MINUTES
+        deadline = locked.start_time + timezone.timedelta(minutes=duration)
+        locked.end_time = min(timezone.now(), deadline)
         locked.status = 'submitted'
 
         locked.save(

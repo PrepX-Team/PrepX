@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4 px-lg-4 analytics-page">
 
-    <div class="mb-4">
+    <div class="analytics-banner mb-4">
+        <span class="section-kicker">YOUR LEARNING INSIGHTS</span>
         <h1 class="h3 mb-1">My Analytics</h1>
         <p class="text-muted mb-0">
             Track your practice performance and progress.
@@ -26,30 +27,30 @@
         <div class="row g-3 mb-4">
 
             <div class="col-md-3">
-                <div class="card p-3 text-center h-100">
+                <div class="card p-3 text-center h-100 analytics-metric">
                     <h3>{{ overview.completed_tests }}</h3>
                     <small class="text-muted">Completed Tests</small>
                 </div>
             </div>
 
             <div class="col-md-3">
-                <div class="card p-3 text-center h-100">
+                <div class="card p-3 text-center h-100 analytics-metric">
                     <h3>{{ overview.average_score }}</h3>
                     <small class="text-muted">Average Score</small>
                 </div>
             </div>
 
             <div class="col-md-3">
-                <div class="card p-3 text-center h-100">
+                <div class="card p-3 text-center h-100 analytics-metric">
                     <h3>{{ overview.overall_accuracy }}%</h3>
                     <small class="text-muted">Overall Accuracy</small>
                 </div>
             </div>
 
             <div class="col-md-3">
-                <div class="card p-3 text-center h-100">
+                <div class="card p-3 text-center h-100 analytics-metric">
                     <h3>
-                        {{ trend.status|default:"—"|title }}
+                        {{ trend.status|default:"—"|cut:"_"|title }}
                     </h3>
                     <small class="text-muted">Trend</small>
                 </div>
@@ -58,7 +59,7 @@
         </div>
 
 
-        <div class="card shadow-sm mb-4">
+        <div class="card shadow-sm mb-4 analytics-panel">
             <div class="card-body">
 
                 <h5 class="card-title">Topic Performance</h5>
@@ -100,7 +101,7 @@
         </div>
 
 
-        <div class="card shadow-sm mb-4">
+        <div class="card shadow-sm mb-4 analytics-panel">
             <div class="card-body">
 
                 <h5 class="card-title">Difficulty Performance</h5>
@@ -135,7 +136,7 @@
         </div>
 
 
-        <div class="card shadow-sm mb-4">
+        <div class="card shadow-sm mb-4 analytics-panel">
             <div class="card-body">
 
                 <h5 class="card-title">Time Analytics</h5>
@@ -165,7 +166,7 @@
         </div>
 
 
-        <div class="card shadow-sm mb-4">
+        <div class="card shadow-sm mb-4 analytics-panel">
             <div class="card-body">
 
                 <h5 class="card-title">Weak Topics</h5>
@@ -188,7 +189,7 @@
         </div>
 
 
-        <div class="card shadow-sm mb-4">
+        <div class="card shadow-sm mb-4 analytics-panel">
             <div class="card-body">
 
                 <h5 class="card-title">Strong Topics</h5>

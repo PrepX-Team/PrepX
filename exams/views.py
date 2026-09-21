@@ -169,6 +169,8 @@ def practice_timer_status(request, attempt_id):
             status=403,
         )
 
+    attempt = auto_finalize_if_expired(attempt)
+
     return JsonResponse({
         'remaining_seconds': get_remaining_seconds(attempt),
         'server_time': timezone.now().isoformat(),
@@ -342,6 +344,14 @@ def practice_attempt(request, attempt_id):
     if attempt.student_id != request.user.id:
         return HttpResponseForbidden(
             "You cannot access another student's attempt."
+        )
+
+    attempt = auto_finalize_if_expired(attempt)
+
+    if attempt.status == 'submitted':
+        return redirect(
+            'practice_result',
+            attempt_id=attempt.id,
         )
 
     answers = (

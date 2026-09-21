@@ -5,7 +5,7 @@
     <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'student_join_exam' %}active{% endif %}" href="{% url 'student_join_exam' %}"><i class="bi bi-door-open"></i><span>Join an exam</span></a></li>
     <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'result_list' or request.resolver_match.url_name == 'result_detail' %}active{% endif %}" href="{% url 'result_list' %}"><i class="bi bi-clipboard-data"></i><span>My results</span></a></li>
     <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'student_analytics' %}active{% endif %}" href="{% url 'student_analytics' %}"><i class="bi bi-bar-chart-line"></i><span>Analytics</span></a></li>
-    <li class="nav-item"><span class="nav-link disabled"><i class="bi bi-award"></i><span>Certificates</span><span class="badge badge-soon ms-auto">Soon</span></span></li>
+    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'certificate_list' %}active{% endif %}" href="{% url 'certificate_list' %}"><i class="bi bi-award"></i><span>Certificates</span></a></li>
     {% elif user.role == 'teacher' %}
     <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'teacher_dashboard' %}active{% endif %}" href="{% url 'teacher_dashboard' %}"><i class="bi bi-grid-1x2"></i><span>Overview</span></a></li>
     <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'question_list' %}active{% endif %}" href="{% url 'question_list' %}"><i class="bi bi-journal-text"></i><span>Question bank</span></a></li>
