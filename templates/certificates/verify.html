@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %} · Verify Certificate{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="card shadow-sm mx-auto" style="max-width: 700px;">
+    <div class="card-body text-center p-4">
+      <h1 class="h3">Certificate Verified</h1>
+      <p>This PrepX certificate confirms completion of 10 topic practice tests.</p>
+      <h2 class="h4">{{ certificate.student.get_full_name|default:certificate.student.username }}</h2>
+      <p><strong>{{ certificate.topic.name }}</strong> — {{ certificate.topic.subject.name }}</p>
+      <hr>
+      <p>Completed: {{ certificate.completed_at|date:'d F Y' }}</p>
+      <p class="small text-break">Certificate ID: {{ certificate.certificate_id }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

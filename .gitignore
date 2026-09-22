@@ -30,6 +30,7 @@ staticfiles/
 # =========================
 .env
 .env.*
+!.env.example
 
 # =========================
 # IDEs / EDITORS
@@ -60,3 +61,10 @@ desktop.ini
 # =========================
 *.swp
 *.swo
+# Local database backups and Python environments
+*.sqlite3.bak
+*.bak
+.venv/
+
+# Local development and viva notes
+SIMPLE_CODE_GUIDE.md

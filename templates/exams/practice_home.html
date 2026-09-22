@@ -1,24 +1,15 @@
 {% extends 'base.html' %}
-
+{% block title %} · Practice subjects{% endblock %}
 {% block content %}
-<h4>Practice — Select Subject</h4>
-
-<div class="row g-3">
-    {% for s in subjects %}
-    <div class="col-md-4">
-        <div class="card card-stat p-3">
-            <h5>{{ s.name }}</h5>
-
-            <a href="{% url 'practice_topics' s.id %}"
-               class="btn btn-outline-primary btn-sm">
-                Select
-            </a>
-        </div>
-    </div>
-    {% empty %}
-    <p class="text-secondary">
-        No practice subjects are available yet.
-    </p>
-    {% endfor %}
+<div class="prepx-page">
+  <section class="inner-page-hero"><div><span class="section-kicker">BUILD YOUR SKILLS</span><h1>Choose a subject.</h1><p>Build confidence one topic at a time. Each topic includes ten progressive practice tests.</p></div><i class="bi bi-journal-richtext" aria-hidden="true"></i></section>
+  <div class="section-heading"><div><span class="section-kicker">SUBJECT LIBRARY</span><h2>Explore practice</h2></div></div>
+  <div class="row g-3">
+    {% for s in subjects %}<div class="col-md-6 col-xl-4"><div class="card prepx-panel h-100 p-4">
+      <span class="metric-icon icon-amber"><i class="bi bi-book"></i></span><h3 class="h5 mb-2">{{ s.name }}</h3>
+      <p class="small text-muted mb-3">Select a topic and start practicing.</p>
+      <a href="{% url 'practice_topics' s.id %}" class="btn btn-outline-primary mt-auto">Explore topics <i class="bi bi-arrow-right ms-2"></i></a>
+    </div></div>{% empty %}<div class="col-12"><div class="card prepx-panel p-5 text-center"><h3 class="h5">No practice subjects available yet</h3><p class="text-muted mb-0">Ask your administrator to add subjects.</p></div></div>{% endfor %}
+  </div>
 </div>
 {% endblock %}

@@ -16,8 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 
 urlpatterns = [
+    path('', RedirectView.as_view(pattern_name='role_redirect', permanent=False)),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('subjects/', include('subjects.urls')),
@@ -28,6 +30,7 @@ urlpatterns = [
     path('students/', include('students.urls')),
     path('results/', include('results.urls')),
     path('analytics/', include('analytics.urls')),
+    path('certificates/', include('certificates.urls')),
 ]
 
 handler403 = 'accounts.views.custom_403'
