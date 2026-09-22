@@ -6,10 +6,13 @@ Django-based student practice, teacher-conducted exams, results, analytics, repo
 
 1. Create/activate a Python virtual environment.
 2. `pip install -r requirements.txt`
-3. `python manage.py migrate`
-4. `python manage.py test`
-5. `python manage.py runserver`
-6. Open `http://127.0.0.1:8000/accounts/login/`.
+3. Create a `.env` file in the project root using `.env.example` as a reference.
+   Set `DJANGO_SECRET_KEY` to your own secret key and `DJANGO_DEBUG=true` for local development.
+   Never commit `.env` to GitHub.
+4. `python manage.py migrate`
+5. `python manage.py test`
+6. `python manage.py runserver`
+7. Open `http://127.0.0.1:8000/accounts/login/`.
 
 Certificates are earned after completing all ten distinct practice tests for a topic. Certificate PDFs include a faint PrepX logo watermark, unique ID and public verification link.
 
